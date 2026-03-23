@@ -7,8 +7,8 @@ import Spinner from 'ink-spinner';
 import path from 'path';
 import fs from 'fs';
 import { compile } from '../core/compiler.js';
-import { getTemplate } from '../core/templates.js';
-import { listAddons, installAddon } from '../core/addons.js';
+import { getTemplate } from '../templates/templates.js';
+import { listAddons, installAddon } from '../addons/addons.js';
 
 const e = React.createElement;
 
@@ -20,7 +20,7 @@ const SidebarItem = ({ label, isSelected }) => (
 
 const MektaDashboard = () => {
   const { exit } = useApp();
-  const [activeTab, setActiveTab] = useState('Build'); // Build, AI, Addons, Docs, Settings
+  const [activeTab, setActiveTab] = useState('Build');
   const [input, setInput] = useState('');
   const [logs, setLogs] = useState(['Mekta OS v1.2.0 initialized.', 'System ready for Architect.']);
   const [stats, setStats] = useState({ cpu: 0, mem: 0 });
@@ -37,7 +37,6 @@ const MektaDashboard = () => {
 
   useInput((input, key) => {
     if (key.escape) exit();
-    if (key.upArrow && !activeTab.includes('Select')) { /* Cycle tabs? */ }
   });
 
   const addLog = (msg) => setLogs(prev => [...prev.slice(-8), msg]);
@@ -59,7 +58,6 @@ const MektaDashboard = () => {
 
   return (
     e(Box, { flexDirection: 'column', padding: 1, height: 26, borderStyle: 'double', borderColor: '#8A2BE2' },
-      // Header
       e(Box, { justifyContent: 'space-between', marginBottom: 1, borderStyle: 'single', borderColor: '#333', paddingX: 1 },
         e(Box, null,
           e(Text, { color: '#8A2BE2', bold: true }, 'MEKTA'),
@@ -71,14 +69,11 @@ const MektaDashboard = () => {
         )
       ),
 
-      // Main Content
       e(Box, { flexGrow: 1 },
-        // Sidebar
         e(Box, { flexDirection: 'column', width: 20, borderStyle: 'single', borderColor: '#444', marginRight: 1 },
           tabs.map(t => e(SidebarItem, { key: t, label: t, isSelected: activeTab === t }))
         ),
 
-        // Active Pane
         e(Box, { flexGrow: 1, flexDirection: 'column', paddingX: 1, borderStyle: 'round', borderColor: '#8A2BE2' },
           e(Text, { color: '#9370DB', bold: true, underline: true }, `[ ${activeTab.toUpperCase()} ]`),
 
@@ -100,7 +95,6 @@ const MektaDashboard = () => {
             )
           ),
 
-          // Log Box in Pane
           e(Box, { height: 10, flexDirection: 'column', borderStyle: 'single', borderColor: '#222', paddingX: 1, marginTop: 'auto' },
             logs.map((log, i) => (
               e(Text, { key: i, color: i === logs.length - 1 ? 'white' : 'gray' },
@@ -111,7 +105,6 @@ const MektaDashboard = () => {
         )
       ),
 
-      // Footer / Input
       e(Box, { marginTop: 1 },
         e(Text, { color: '#8A2BE2', bold: true }, ' > '),
         e(TextInput, { value: input, onChange: setInput, onSubmit: handleCommand, placeholder: 'Enter command or /tab name...' })

@@ -5,11 +5,12 @@ import { startTUI } from './tui.js';
 import fs from 'fs';
 import path from 'path';
 import { compile } from '../core/compiler.js';
-import { getTemplate } from '../core/templates.js';
+import { getTemplate } from '../templates/templates.js';
 import { spawn } from 'child_process';
 import chokidar from 'chokidar';
 import chalk from 'chalk';
 import gradient from 'gradient-string';
+import prompts from 'prompts';
 
 const program = new Command();
 const purpleGradient = gradient(['#8A2BE2', '#9370DB', '#E6E6FA']);
@@ -40,28 +41,69 @@ program
   });
 
 /**
- * CLI create command
+ * Interactive CLI create command
  */
 program
-  .command('create <name>')
-  .description('Scaffold a new Mekta project')
-  .action((name) => {
-    const projectPath = path.resolve(name);
+  .command('create [name]')
+  .description('Scaffold a new Mekta project interactively')
+  .action(async (name) => {
+    const response = await prompts([
+      {
+        type: name ? null : 'text',
+        name: 'projectName',
+        message: 'What is your project name?',
+        initial: 'my-mekta-app'
+      },
+      {
+        type: 'select',
+        name: 'template',
+        message: 'Pick a template',
+        choices: [
+          { title: 'Standard Web', value: 'web' },
+          { title: 'FiveM UI (Mod)', value: 'fivem' },
+          { title: 'Landing Page', value: 'landing' }
+        ]
+      },
+      {
+        type: 'select',
+        name: 'target',
+        message: 'Default build target?',
+        choices: [
+          { title: 'React (JS)', value: 'react' },
+          { title: 'Static HTML', value: 'html' },
+          { title: 'PHP Template', value: 'php' }
+        ]
+      }
+    ]);
+
+    const finalName = name || response.projectName;
+    if (!finalName) return;
+
+    const projectPath = path.resolve(finalName);
     if (fs.existsSync(projectPath)) {
-      console.error(chalk.red(`Error: Directory ${name} already exists.`));
+      console.error(chalk.red(`Error: Directory ${finalName} already exists.`));
       process.exit(1);
     }
+
     fs.mkdirSync(projectPath, { recursive: true });
     fs.mkdirSync(path.join(projectPath, 'src'));
-    fs.writeFileSync(path.join(projectPath, 'src/app.mek'), getTemplate('web'));
+    fs.writeFileSync(path.join(projectPath, 'src/app.mek'), getTemplate(response.template));
     fs.writeFileSync(path.join(projectPath, 'package.json'), JSON.stringify({
-      name, version: '1.0.0', type: 'module', dependencies: { mekta: 'latest' }
+      name: finalName,
+      version: '1.0.0',
+      type: 'module',
+      scripts: {
+        "build": `mekta build src/app.mek --target ${response.target}`,
+        "dev": "mekta dev"
+      },
+      dependencies: { mekta: 'latest' }
     }, null, 2));
-    console.log(chalk.green(`Project ${name} created successfully!`));
+
+    console.log(chalk.green(`\nProject ${finalName} created successfully!`));
   });
 
 /**
- * CLI build command (with --target flag)
+ * CLI build command
  */
 program
   .command('build')
@@ -76,17 +118,11 @@ program
     }
     try {
       const source = fs.readFileSync(filePath, 'utf8');
-      const { js, css, target } = compile(source, { target: options.target });
-
+      const { js, target } = compile(source, { target: options.target });
       const extension = target === 'react' ? '.js' : (target === 'php' ? '.php' : '.html');
       const outPath = filePath.replace('.mek', extension);
-      const outPathCSS = filePath.replace('.mek', '.css');
-
       fs.writeFileSync(outPath, js);
-      if (css) fs.writeFileSync(outPathCSS, css);
-
       console.log(chalk.green(`Successfully built ${file} for target: ${target}`));
-      console.log(chalk.cyan(`  - ${path.basename(outPath)}`));
     } catch (err) {
       console.error(chalk.red(`Build failed: ${err.message}`));
     }
@@ -107,7 +143,7 @@ program
     watcher.on('change', (path) => {
       console.log(chalk.yellow(`\nFile ${path} changed. Restarting server...`));
       serverProcess.kill();
-      process.exit(0); // Exit so parent can restart
+      process.exit(0);
     });
   });
 

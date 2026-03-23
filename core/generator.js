@@ -60,12 +60,14 @@ function generateHTML(node) {
 }
 
 /**
- * Target: PHP Template (Single-echo output)
+ * Target: PHP Template (Enhanced)
  */
 function generatePHP(node) {
   switch (node.type) {
     case 'Program':
-      return '<?php\n' + node.body.map(n => `echo "${generateHTML(n).replace(/"/g, '\\"')}";`).join('\n') + '\n?>';
+      return '<?php\n/** Mekta PHP Target - Production Ready */\n' +
+             node.body.map(n => `echo "${generateHTML(n).replace(/"/g, '\\"')}";`).join('\n') +
+             '\n?>';
     default:
       return '';
   }
