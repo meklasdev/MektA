@@ -1,5 +1,6 @@
 /**
- * Simple Tokenizer for .mek files
+ * Enhanced Tokenizer for .mek files
+ * Supports self-closing tags and comments.
  */
 export function tokenize(input) {
   const tokens = [];
@@ -7,6 +8,19 @@ export function tokenize(input) {
 
   while (cursor < input.length) {
     const char = input[cursor];
+
+    // Handle Comments <!-- -->
+    if (char === '<' && input.slice(cursor, cursor + 4) === '<!--') {
+      let comment = '';
+      cursor += 4;
+      while (cursor < input.length && input.slice(cursor, cursor + 3) !== '-->') {
+        comment += input[cursor];
+        cursor += 1;
+      }
+      cursor += 3;
+      tokens.push({ type: 'COMMENT', value: comment.trim() });
+      continue;
+    }
 
     if (char === '<') {
       if (input[cursor + 1] === '/') {
@@ -16,6 +30,12 @@ export function tokenize(input) {
         tokens.push({ type: 'OPEN_TAG_START', value: '<' });
         cursor += 1;
       }
+      continue;
+    }
+
+    if (char === '/' && input[cursor + 1] === '>') {
+      tokens.push({ type: 'SELF_CLOSE_TAG_END', value: '/>' });
+      cursor += 2;
       continue;
     }
 
@@ -50,11 +70,13 @@ export function tokenize(input) {
     }
 
     // Match identifiers or text
-    const isInsideTag = tokens.length > 0 &&
-      (tokens[tokens.length - 1].type === 'OPEN_TAG_START' ||
-       tokens[tokens.length - 1].type === 'CLOSE_TAG_START' ||
-       tokens[tokens.length - 1].type === 'IDENTIFIER' ||
-       tokens[tokens.length - 1].type === 'EQUALS');
+    const lastToken = tokens[tokens.length - 1];
+    const isInsideTag = lastToken && (
+      lastToken.type === 'OPEN_TAG_START' ||
+      lastToken.type === 'CLOSE_TAG_START' ||
+      lastToken.type === 'IDENTIFIER' ||
+      lastToken.type === 'EQUALS'
+    );
 
     if (isInsideTag) {
       let identifier = '';
@@ -85,7 +107,7 @@ export function tokenize(input) {
 }
 
 /**
- * Recursive Descent Parser for .mek AST
+ * Enhanced Recursive Descent Parser for .mek AST
  */
 export function parse(tokens) {
   let current = 0;
@@ -93,60 +115,63 @@ export function parse(tokens) {
   function walk() {
     let token = tokens[current];
 
+    if (!token) return null;
+
+    if (token.type === 'COMMENT') {
+      current++;
+      return { type: 'CommentNode', value: token.value };
+    }
+
     if (token.type === 'TEXT') {
       current++;
-      return {
-        type: 'TextNode',
-        value: token.value,
-      };
+      return { type: 'TextNode', value: token.value };
     }
 
     if (token.type === 'OPEN_TAG_START') {
-      token = tokens[++current]; // Skip <
-
+      token = tokens[++current]; // tag name
       const node = {
         type: 'Element',
         tag: token.value,
         props: {},
         children: [],
       };
+      current++;
 
-      token = tokens[++current]; // Skip identifier
-
-      while (token.type !== 'TAG_END') {
+      // Parse Attributes
+      while (current < tokens.length &&
+             tokens[current].type !== 'TAG_END' &&
+             tokens[current].type !== 'SELF_CLOSE_TAG_END') {
+        token = tokens[current];
         if (token.type === 'IDENTIFIER') {
           const name = token.value;
-          token = tokens[++current]; // Skip identifier
-          if (token.type === 'EQUALS') {
-            token = tokens[++current]; // Skip =
-            node.props[name] = token.value;
-            token = tokens[++current]; // Skip string
+          current++;
+          if (tokens[current] && tokens[current].type === 'EQUALS') {
+            current++;
+            node.props[name] = tokens[current].value;
+            current++;
           } else {
             node.props[name] = true;
           }
         } else {
           current++;
         }
-        token = tokens[current];
       }
 
-      current++; // Skip >
-
-      token = tokens[current];
-      while (
-        token &&
-        (token.type !== 'CLOSE_TAG_START')
-      ) {
-        node.children.push(walk());
-        token = tokens[current];
+      if (tokens[current] && tokens[current].type === 'SELF_CLOSE_TAG_END') {
+        current++;
+        return node;
       }
 
-      if (token && token.type === 'CLOSE_TAG_START') {
+      current++; // TAG_END
+
+      // Parse Children
+      while (current < tokens.length && tokens[current].type !== 'CLOSE_TAG_START') {
+        const child = walk();
+        if (child) node.children.push(child);
+      }
+
+      if (tokens[current] && tokens[current].type === 'CLOSE_TAG_START') {
         current++; // Skip </
-        token = tokens[current]; // tag name
-        if (token.value !== node.tag) {
-          throw new Error(`Expected closing tag for ${node.tag}, but found ${token.value}`);
-        }
         current++; // Skip tag name
         current++; // Skip >
       }
@@ -154,17 +179,18 @@ export function parse(tokens) {
       return node;
     }
 
-    throw new TypeError(`Unknown token type: ${token.type}`);
+    if (token.type === 'CLOSE_TAG_START') {
+        return null;
+    }
+
+    current++;
+    return null;
   }
 
-  const ast = {
-    type: 'Program',
-    body: [],
-  };
-
+  const ast = { type: 'Program', body: [] };
   while (current < tokens.length) {
-    ast.body.push(walk());
+    const node = walk();
+    if (node) ast.body.push(node);
   }
-
   return ast;
 }

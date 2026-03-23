@@ -1,52 +1,53 @@
 /**
  * Mekta Addon System
- * Allows extending the framework with GSAP, Next.js templates, etc.
  */
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
 import chalk from 'chalk';
 
 const addons = {
   gsap: {
+    id: 'gsap',
     name: 'GSAP Animations',
     package: 'gsap',
     description: 'Adds GSAP for high-performance animations in Mekta components.',
-    inject: (source) => {
-      return `import { gsap } from 'gsap';\n${source}`;
+    onInstall: (projectPath) => {
+      const demoMek = `<page><text id="hero">Animate me!</text></page>`;
+      fs.writeFileSync(path.join(projectPath, 'gsap-demo.mek'), demoMek);
     }
   },
-  nextjs: {
-    name: 'Next.js Bridge',
-    package: 'next',
-    description: 'Experimental bridge to render .mek inside Next.js pages.',
-    inject: (source) => source // Placeholder
+  fivem: {
+    id: 'fivem',
+    name: 'FiveM Resource',
+    package: 'fivem-ui-bridge',
+    description: 'Configures your project for use as a FiveM UI resource.',
+    onInstall: (projectPath) => {
+      // Generate FiveM specific files
+      const manifest = `fx_version 'cerulean'\ngame 'gta5'\nui_page 'html/index.html'\nfiles {\n  'html/index.html',\n  'html/style.css',\n  'html/script.js'\n}`;
+      fs.writeFileSync(path.join(projectPath, 'fxmanifest.lua'), manifest);
+      if (!fs.existsSync(path.join(projectPath, 'html'))) {
+        fs.mkdirSync(path.join(projectPath, 'html'));
+      }
+    }
   }
 };
 
-export function listAddons() {
-  return Object.keys(addons).map(key => ({
-    id: key,
-    ...addons[key]
-  }));
-}
+export function listAddons() { return Object.values(addons); }
 
 export function installAddon(addonId, projectPath) {
   const addon = addons[addonId];
   if (!addon) throw new Error(`Addon ${addonId} not found.`);
 
   console.log(chalk.cyan(`[Mekta Addons] Installing ${addon.name}...`));
-
   try {
-    // Mock installation by adding to package.json if it exists
     const pkgPath = path.join(projectPath, 'package.json');
     if (fs.existsSync(pkgPath)) {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
       pkg.dependencies = pkg.dependencies || {};
       pkg.dependencies[addon.package] = 'latest';
       fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
-      console.log(chalk.green(`Successfully added ${addon.package} to dependencies.`));
     }
+    if (addon.onInstall) addon.onInstall(projectPath);
     return true;
   } catch (err) {
     console.error(chalk.red(`Failed to install addon: ${err.message}`));

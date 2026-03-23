@@ -1,0 +1,26 @@
+
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Mekta AI - Generated UI</title>
+          <style>
+            body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: #fff; padding: 2rem; }
+            #root { background: #2d2d2d; padding: 20px; border-radius: 8px; border: 1px solid #8A2BE2; }
+            pre { background: #000; color: #9370DB; padding: 10px; border-radius: 5px; overflow: auto; }
+            h3 { color: #8A2BE2; }
+            button { background: #8A2BE2; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+          </style>
+        </head>
+        <body>
+          <h1 style="color: #8A2BE2;">Mekta AI Builder</h1>
+          <div id="root"><div><p>AI Agent Output: test styles</p><button color="purple">Interact with AI</button></div></div>
+          <hr style="border-color: #444;" />
+          <h3>Source (.mek)</h3>
+          <pre>&lt;page&gt;
+  &lt;text&gt;AI Agent Output: test styles&lt;/text&gt;
+  &lt;button color="purple"&gt;Interact with AI&lt;/button&gt;
+&lt;/page&gt;</pre>
+          <h3>Compiled (JS)</h3>
+          <pre>createElement("page", null, createElement("text", null, "AI Agent Output: test styles"), createElement("button", {"color":"purple"}, "Interact with AI"))</pre>
+        </body>
+      </html>
