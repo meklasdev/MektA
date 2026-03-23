@@ -1,0 +1,12 @@
+<page>
+  <header>
+    <text>Welcome to Mekta</text>
+  </header>
+  <main>
+    <text>The custom framework of the future.</text>
+    <button color="red">Click to get started</button>
+  </main>
+  <footer>
+    <text>Powered by Mekta AI</text>
+  </footer>
+</page>
