@@ -1,0 +1,30 @@
+<page class="mekta-landing">
+  <header>
+    <text size="large" weight="bold">MEKTA FRAMEWORK</text>
+  </header>
+
+  <hero>
+    <text size="xl">The Future of Agentic UI is here.</text>
+    <text color="gray">High-fidelity terminal interfaces, FiveM UI, and professional landing pages at your fingertips.</text>
+    <button color="purple">Get Started</button>
+  </hero>
+
+  <features>
+    <container id="feat-1">
+      <text weight="bold">.mek Syntax</text>
+      <text>Simplified JSX-like DSL for AI and human developers.</text>
+    </container>
+    <container id="feat-2">
+      <text weight="bold">TUI Dashboard</text>
+      <text>Interactive terminal dashboard with log monitoring and mode switching.</text>
+    </container>
+    <container id="feat-3">
+      <text weight="bold">Addon System</text>
+      <text>One-click integration for GSAP, Next.js, and more.</text>
+    </container>
+  </features>
+
+  <footer>
+    <text>© 2024 Mekta Team. Built for the Next Generation.</text>
+  </footer>
+</page>
