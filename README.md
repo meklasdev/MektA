@@ -1,6 +1,13 @@
-# Mekta Framework
+# Mekta Framework 💜
 
-A custom frontend framework that compiles `.mek` files into React-compatible JavaScript.
+The Future of Agentic UI. A custom frontend framework that compiles `.mek` files into React-compatible JavaScript.
+
+## Features
+
+- **Purple Dashboard CLI**: Beautiful ASCII art and visual feedback.
+- **Agentic AI Integration**: In-built AI prompt to UI generation.
+- **Presets**: Standard Web, **FiveM UI**, and Landing Page templates.
+- **React-Compatible**: Compiles to standard `createElement` calls.
 
 ## Installation
 
@@ -8,40 +15,37 @@ A custom frontend framework that compiles `.mek` files into React-compatible Jav
 npm install
 ```
 
-## Usage
+## CLI Usage
 
-### CLI
-
-The `mekta` command is available via `npm run`.
-
-**Build a .mek file:**
+### Create a new project
 ```bash
-npm run build -- examples/app.mek
+node cli/index.js newproject
 ```
-This will generate `examples/app.js`.
+Follow the interactive prompts to scaffold a new project from presets (e.g. FiveM UI).
 
-**Start the dev server:**
+### Build a .mek file
 ```bash
-npm run dev
+node cli/index.js build <file.mek>
 ```
 
-### AI Generation API
+### Run dev server
+```bash
+node cli/index.js dev
+```
 
-The server provides a POST endpoint to generate and render `.mek` code.
+## AI Agent Builder
 
-**Endpoint:** `POST /generate`
-**Body:** `{"prompt": "Your prompt here"}`
+Start the server and use the `/generate` endpoint:
 
-**Example:**
 ```bash
 curl -X POST http://localhost:3000/generate \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "A modern dashboard"}'
+  -d '{"prompt": "Generate a modern fivem menu"}'
 ```
 
 ## Project Structure
 
-- `core/`: Compiler, parser, generator, and runtime.
+- `core/`: Compiler, parser, templates, and runtime.
 - `server/`: Express server for AI generation and SSR.
-- `cli/`: Command-line interface.
+- `cli/`: Dashboard CLI tool.
 - `examples/`: Sample `.mek` files.
