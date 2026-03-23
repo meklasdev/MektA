@@ -4,7 +4,6 @@ import TextInput from 'ink-text-input';
 import SelectInput from 'ink-select-input';
 import BigText from 'ink-big-text';
 import Spinner from 'ink-spinner';
-import chalk from 'chalk';
 import path from 'path';
 import fs from 'fs';
 import { compile } from '../core/compiler.js';
@@ -26,35 +25,49 @@ const MektaDashboard = () => {
   const [input, setInput] = useState('');
   const [logs, setLogs] = useState(['Welcome to Mekta Framework.', 'Type /help for commands.']);
   const [selection, setSelection] = useState(null);
+  const [activeAddon, setActiveAddon] = useState(null);
 
-  const addLog = (msg) => setLogs((prev) => [...prev.slice(-5), msg]);
+  const addLog = (msg) => setLogs((prev) => [...prev.slice(-10), msg]);
 
   useInput((input, key) => {
-    if (key.escape) exit();
+    if (key.escape) {
+      if (selection) setSelection(null);
+      else exit();
+    }
   });
 
   const handleCommand = (cmd) => {
     const trimmed = cmd.trim();
     if (trimmed === '/help') {
-      addLog('Commands: /new, /build <file>, /addons, /exit');
+      addLog('Commands: /new (Templates), /build <file>, /addons, /exit');
     } else if (trimmed === '/new') {
       setSelection('template');
     } else if (trimmed === '/addons') {
       setSelection('addons');
     } else if (trimmed.startsWith('/build ')) {
-      const file = trimmed.split(' ')[1];
+      const parts = trimmed.split(' ');
+      const file = parts[1];
+      const target = parts[2] || 'react';
       try {
         const source = fs.readFileSync(path.resolve(file), 'utf8');
-        const compiled = compile(source);
-        fs.writeFileSync(file.replace('.mek', '.js'), compiled);
-        addLog(`Build success: ${file} -> JS`);
+        const { js } = compile(source, { target });
+        const ext = target === 'react' ? '.js' : (target === 'php' ? '.php' : '.html');
+        fs.writeFileSync(file.replace('.mek', ext), js);
+        addLog(`Build success: ${file} -> ${target.toUpperCase()}`);
       } catch (err) {
         addLog(`Build error: ${err.message}`);
       }
     } else if (trimmed === '/exit') {
       exit();
+    } else if (trimmed === '/mode') {
+      const modes = ['Architect', 'Builder', 'Agent'];
+      const nextIdx = (modes.indexOf(mode) + 1) % modes.length;
+      setMode(modes[nextIdx]);
+      addLog(`Switched to ${modes[nextIdx]} mode.`);
+    } else if (trimmed.startsWith('!')) {
+      addLog(`Shell: Executing "${trimmed.slice(1)}"... (Simulated)`);
     } else {
-      addLog(`AI Agent (Mock): Processing "${trimmed}"...`);
+      addLog(`AI: Processing "${trimmed}"...`);
     }
     setInput('');
   };
@@ -63,34 +76,46 @@ const MektaDashboard = () => {
     const template = getTemplate(item.value);
     const filename = `app-${item.value}.mek`;
     fs.writeFileSync(filename, template);
-    addLog(`Created ${filename} from ${item.label} template.`);
+    addLog(`SUCCESS: Created ${filename} from ${item.label} template.`);
     setSelection(null);
   };
 
   const handleAddonSelect = (item) => {
     const success = installAddon(item.value, process.cwd());
-    if (success) addLog(`Addon ${item.label} installed.`);
+    if (success) addLog(`SUCCESS: Addon ${item.label} installed.`);
     setSelection(null);
   };
 
+  const handleAddonHighlight = (item) => {
+    const addon = listAddons().find(a => a.id === item.value);
+    setActiveAddon(addon);
+  };
+
   return (
-    e(Box, { flexDirection: 'column', padding: 1, minHeight: 20 },
+    e(Box, { flexDirection: 'column', padding: 1, minHeight: 22 },
       e(BigText, { text: 'MEKTA', colors: ['#8A2BE2', '#9370DB'], font: 'block' }),
 
       e(Box, { marginBottom: 1 },
         e(Text, { color: '#E6E6FA' }, 'The Agentic UI Framework for high-fidelity terminal interfaces.')
       ),
 
-      e(PurpleBox, { title: 'Status & Logs' },
-        logs.map((log, i) => (
-          e(Text, { key: i, color: i === logs.length - 1 ? 'white' : 'gray' },
-            `${i === logs.length - 1 ? '➜ ' : '  '} ${log}`
-          )
-        ))
+      e(PurpleBox, { title: 'Status Dashboard' },
+        e(Box, { justifyContent: 'space-between' },
+          e(Text, { color: 'cyan' }, `MODE: ${mode}`),
+          e(Text, { color: 'yellow' }, `TARGETS: React | HTML | PHP`),
+          e(Text, { color: 'green' }, 'SYSTEM: Ready')
+        ),
+        e(Box, { marginTop: 1, flexDirection: 'column' },
+          logs.map((log, i) => (
+            e(Text, { key: i, color: log.startsWith('SUCCESS') ? 'green' : (i === logs.length - 1 ? 'white' : 'gray') },
+              `${i === logs.length - 1 ? '➜ ' : '  '} ${log}`
+            )
+          ))
+        )
       ),
 
       selection === 'template' && e(Box, { marginTop: 1, flexDirection: 'column' },
-        e(Text, { color: 'yellow' }, 'Select a template to generate:'),
+        e(Text, { color: 'yellow', bold: true }, '--- SELECT TEMPLATE ---'),
         e(SelectInput, {
           items: [
             { label: 'Standard Web', value: 'web' },
@@ -98,15 +123,29 @@ const MektaDashboard = () => {
             { label: 'Landing Page', value: 'landing' }
           ],
           onSelect: handleTemplateSelect
-        })
+        }),
+        e(Text, { color: 'gray' }, 'Esc to go back')
       ),
 
       selection === 'addons' && e(Box, { marginTop: 1, flexDirection: 'column' },
-        e(Text, { color: 'cyan' }, 'Available Addons:'),
-        e(SelectInput, {
-          items: listAddons().map(a => ({ label: a.name, value: a.id })),
-          onSelect: handleAddonSelect
-        })
+        e(Text, { color: 'cyan', bold: true }, '--- AVAILABLE ADDONS ---'),
+        e(Box, null,
+          e(Box, { width: 30 },
+            e(SelectInput, {
+              items: listAddons().map(a => ({ label: a.name, value: a.id })),
+              onSelect: handleAddonSelect,
+              onHighlight: handleAddonHighlight
+            })
+          ),
+          e(Box, { paddingLeft: 2, flexDirection: 'column', flexGrow: 1 },
+            activeAddon && e(React.Fragment, null,
+              e(Text, { color: 'magenta', underline: true }, activeAddon.name),
+              e(Text, { color: 'white', wrap: 'wrap' }, activeAddon.description),
+              e(Text, { color: 'gray' }, `Package: ${activeAddon.package}`)
+            )
+          )
+        ),
+        e(Text, { color: 'gray' }, 'Esc to go back')
       ),
 
       !selection && e(Box, { marginTop: 1, flexDirection: 'column' },

@@ -12,91 +12,83 @@ const app = express();
 app.use(express.json());
 
 /**
- * Enhanced Mock AI function for generating .mek code using templates
+ * Enhanced AI generator that provides multiple targets
  */
 function generateMek(prompt) {
-  const lower = prompt.toLowerCase();
-
-  if (lower.includes('fivem')) {
-    return `
-<style>
-  .fivem-hud { position: fixed; top: 10%; right: 5%; color: white; background: rgba(0,0,0,0.8); padding: 10px; border-left: 5px solid #8A2BE2; }
-  .fivem-btn { background: #8A2BE2; color: white; padding: 5px 10px; border: none; margin-top: 5px; }
-</style>
-<page>
-  <!-- Generated HUD -->
-  <container class="fivem-hud">
-    <text weight="bold">CASH: $1,250,000</text>
-    <text color="gray">JOB: Developer</text>
-    <button class="fivem-btn">Toggle Menu</button>
-  </container>
-</page>
-`.trim();
-  }
-
-  if (lower.includes('landing')) {
-    return getTemplate('landing');
-  }
-
   return `
 <style>
-  .ai-text { color: #8A2BE2; font-weight: bold; }
-  .ai-btn { background: #9370DB; padding: 10px; border-radius: 5px; cursor: pointer; border: none; color: white; margin-top: 10px; }
-  .ai-card { background: #1a1a1a; padding: 20px; border-radius: 12px; border: 1px solid #333; }
+  .ai-card { background: #1a1a1a; padding: 20px; border-radius: 12px; border: 1px solid #8A2BE2; }
+  .ai-title { font-size: 1.5rem; color: #8A2BE2; font-weight: bold; }
 </style>
 <page>
   <container class="ai-card">
-    <text class="ai-text">Mekta AI: High-Fidelity UI Generator</text>
-    <text>Prompt: ${prompt}</text>
-    <button class="ai-btn">Deploy Component</button>
+    <text class="ai-title">Mekta Multi-Target Output</text>
+    <text>Generating UI for: ${prompt}</text>
+    <button color="purple">Deploy to Cloud</button>
   </container>
 </page>
 `.trim();
 }
 
 /**
- * Helper to render .mek source to HTML string
+ * Enhanced multi-target rendering
  */
-function renderMekToHtml(mekCode, title = "Mekta AI - Generated UI") {
-  const { js, css } = compile(mekCode);
+function renderMekAllTargets(mekCode) {
+  const react = compile(mekCode, { target: 'react' });
+  const html = compile(mekCode, { target: 'html' });
+  const php = compile(mekCode, { target: 'php' });
+
+  // Use VM to get the element for React SSR
   const context = { createElement, React: { createElement } };
   vm.createContext(context);
-  const element = vm.runInContext(js, context);
-  const html = renderToString(element);
+  const element = vm.runInContext(react.js, context);
+  const ssrHtml = renderToString(element);
 
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>${title}</title>
-        <style>
-          body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; margin: 0; padding: 20px; }
-          #root { background: #1a1a1a; padding: 20px; border-radius: 12px; border: 1px solid #8A2BE2; min-height: 200px; }
-          pre { background: #000; color: #9370DB; padding: 10px; border-radius: 5px; overflow: auto; border: 1px solid #333; }
-          h3 { color: #8A2BE2; margin-top: 30px; }
-          ${css}
-        </style>
-      </head>
-      <body>
-        <div id="root">${html}</div>
-        <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;" />
-        <h3>Generated Source (.mek)</h3>
-        <pre>${mekCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
-        <h3>Compiled JavaScript</h3>
-        <pre>${js}</pre>
-      </body>
-    </html>
-  `;
+  return {
+    ssrHtml,
+    react: react.js,
+    html: html.js,
+    php: php.js,
+    css: react.css
+  };
 }
 
-// Routes
 app.get('/', (req, res) => {
   try {
-    const landingPath = path.resolve('examples/landing-page.mek');
+    const landingPath = path.resolve('website/index.mek');
     const mekCode = fs.readFileSync(landingPath, 'utf8');
-    res.send(renderMekToHtml(mekCode, "Mekta Framework"));
+    const { ssrHtml, css } = renderMekAllTargets(mekCode);
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Mekta Framework - High-Fidelity Agentic UI</title>
+          <style>
+            body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; margin: 0; padding: 0; }
+            ${css}
+            .target-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 40px; }
+            .code-box { background: #111; padding: 20px; border-radius: 10px; border: 1px solid #333; overflow: auto; max-height: 300px; }
+            .code-box h4 { margin-top: 0; color: #8A2BE2; }
+            pre { color: #9370DB; margin: 0; }
+          </style>
+        </head>
+        <body>
+          <div id="root">${ssrHtml}</div>
+          <div style="padding: 40px; border-top: 1px solid #222;">
+            <h2 style="color: #8A2BE2;">Framework Multi-Target Demo</h2>
+            <div class="target-grid">
+              <div class="code-box"><h4>React Output (JS)</h4><pre>${renderMekAllTargets(mekCode).react.replace(/</g, '&lt;')}</pre></div>
+              <div class="code-box"><h4>PHP Output</h4><pre>${renderMekAllTargets(mekCode).php.replace(/</g, '&lt;')}</pre></div>
+              <div class="code-box"><h4>Static HTML</h4><pre>${renderMekAllTargets(mekCode).html.replace(/</g, '&lt;')}</pre></div>
+              <div class="code-box"><h4>Mekta Source</h4><pre>${mekCode.replace(/</g, '&lt;')}</pre></div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
   } catch (err) {
-    res.status(500).send({ error: `Failed to load landing page: ${err.message}` });
+    res.status(500).send({ error: err.message });
   }
 });
 
@@ -105,11 +97,36 @@ app.post('/generate', async (req, res) => {
   if (!prompt) return res.status(400).send({ error: 'Prompt is required' });
 
   try {
-    console.log(chalk.cyan(`[Mekta AI] Generating content for: ${prompt}`));
     const mekCode = generateMek(prompt);
-    res.send(renderMekToHtml(mekCode));
+    const { ssrHtml, react, html, php, css } = renderMekAllTargets(mekCode);
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Mekta AI - Multi-Target UI</title>
+          <style>
+            body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; padding: 40px; }
+            .preview { background: #1a1a1a; padding: 40px; border-radius: 12px; border: 2px solid #8A2BE2; margin-bottom: 40px; }
+            .code-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+            .tab { background: #111; padding: 20px; border-radius: 10px; border: 1px solid #333; }
+            .tab h4 { margin-top: 0; color: #8A2BE2; }
+            pre { color: #9370DB; white-space: pre-wrap; word-break: break-all; }
+            ${css}
+          </style>
+        </head>
+        <body>
+          <h1 style="color: #8A2BE2;">Mekta AI Multi-Target Builder</h1>
+          <div class="preview">${ssrHtml}</div>
+          <div class="code-tabs">
+            <div class="tab"><h4>React (.js)</h4><pre>${react}</pre></div>
+            <div class="tab"><h4>HTML (.html)</h4><pre>${html.replace(/</g, '&lt;')}</pre></div>
+            <div class="tab"><h4>PHP (.php)</h4><pre>${php.replace(/</g, '&lt;')}</pre></div>
+          </div>
+        </body>
+      </html>
+    `);
   } catch (err) {
-    console.error(chalk.red(`[Mekta Error] ${err.message}`));
     res.status(500).send({ error: err.message });
   }
 });

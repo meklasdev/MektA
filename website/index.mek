@@ -1,0 +1,52 @@
+<style>
+  .hero { text-align: center; padding: 100px 20px; background: linear-gradient(135deg, #1a0a2a, #0a0a0a); }
+  .logo-text { font-size: 5rem; font-weight: 900; color: #8A2BE2; margin: 0; }
+  .tagline { font-size: 1.5rem; color: #9370DB; margin-top: 10px; }
+  .grid { display: flex; gap: 30px; padding: 50px; justify-content: center; flex-wrap: wrap; }
+  .card { background: #111; border: 1px solid #333; padding: 30px; border-radius: 15px; width: 300px; text-align: left; }
+  .card h3 { color: #8A2BE2; margin-top: 0; }
+  .card p { color: #ccc; line-height: 1.6; }
+  .btn-group { margin-top: 30px; display: flex; gap: 15px; justify-content: center; }
+  .btn { padding: 15px 35px; border-radius: 10px; font-weight: bold; cursor: pointer; border: none; }
+  .btn-primary { background: #8A2BE2; color: white; }
+  .btn-secondary { background: transparent; border: 2px solid #8A2BE2; color: #8A2BE2; }
+</style>
+
+<page>
+  <header style="padding: 20px 50px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222;">
+    <text weight="bold" color="#8A2BE2">MEKTA</text>
+    <container style="display: flex; gap: 20px;">
+      <text>Docs</text>
+      <text>GitHub</text>
+      <text>Showcase</text>
+    </container>
+  </header>
+
+  <hero class="hero">
+    <text class="logo-text">MEKTA</text>
+    <text class="tagline">1:1 Next.js Experience, Reimagined for AI Agents.</text>
+    <container class="btn-group">
+      <button class="btn btn-primary">Get Started</button>
+      <button class="btn btn-secondary">Read Docs</button>
+    </container>
+  </hero>
+
+  <main class="grid">
+    <container class="card">
+      <h3>Multi-Target Build</h3>
+      <text>Compile to React, Static HTML, or PHP with a single command.</text>
+    </container>
+    <container class="card">
+      <h3>Agentic DSL</h3>
+      <text>Simplified .mek syntax designed for seamless LLM generation.</text>
+    </container>
+    <container class="card">
+      <h3>Pro Dashboard</h3>
+      <text>A high-fidelity terminal UI inspired by modern dev workflows.</text>
+    </container>
+  </main>
+
+  <footer style="text-align: center; padding: 50px; color: #555; border-top: 1px solid #222;">
+    <text>© 2024 Mekta Framework. The Future of Frontend.</text>
+  </footer>
+</page>

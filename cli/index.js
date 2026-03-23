@@ -51,29 +51,24 @@ program
       console.error(chalk.red(`Error: Directory ${name} already exists.`));
       process.exit(1);
     }
-
     fs.mkdirSync(projectPath, { recursive: true });
     fs.mkdirSync(path.join(projectPath, 'src'));
     fs.writeFileSync(path.join(projectPath, 'src/app.mek'), getTemplate('web'));
     fs.writeFileSync(path.join(projectPath, 'package.json'), JSON.stringify({
-      name,
-      version: '1.0.0',
-      type: 'module',
-      dependencies: { mekta: 'latest' }
+      name, version: '1.0.0', type: 'module', dependencies: { mekta: 'latest' }
     }, null, 2));
-
     console.log(chalk.green(`Project ${name} created successfully!`));
-    console.log(chalk.magenta(`  cd ${name}\n  mekta dev`));
   });
 
 /**
- * CLI build command
+ * CLI build command (with --target flag)
  */
 program
   .command('build')
-  .description('Build a .mek file into React-compatible JS/CSS')
+  .description('Build a .mek file into specified target (react, html, php)')
   .argument('<file>', 'The .mek file to build')
-  .action((file) => {
+  .option('-t, --target <type>', 'The compilation target (react, html, php)', 'react')
+  .action((file, options) => {
     const filePath = path.resolve(file);
     if (!fs.existsSync(filePath)) {
       console.error(chalk.red(`Error: File ${file} not found.`));
@@ -81,17 +76,17 @@ program
     }
     try {
       const source = fs.readFileSync(filePath, 'utf8');
-      const { js, css } = compile(source);
+      const { js, css, target } = compile(source, { target: options.target });
 
-      const outPathJS = filePath.replace('.mek', '.js');
+      const extension = target === 'react' ? '.js' : (target === 'php' ? '.php' : '.html');
+      const outPath = filePath.replace('.mek', extension);
       const outPathCSS = filePath.replace('.mek', '.css');
 
-      fs.writeFileSync(outPathJS, js);
+      fs.writeFileSync(outPath, js);
       if (css) fs.writeFileSync(outPathCSS, css);
 
-      console.log(chalk.green(`Successfully built ${file}`));
-      console.log(chalk.cyan(`  - ${path.basename(outPathJS)}`));
-      if (css) console.log(chalk.cyan(`  - ${path.basename(outPathCSS)}`));
+      console.log(chalk.green(`Successfully built ${file} for target: ${target}`));
+      console.log(chalk.cyan(`  - ${path.basename(outPath)}`));
     } catch (err) {
       console.error(chalk.red(`Build failed: ${err.message}`));
     }
@@ -102,30 +97,20 @@ program
  */
 program
   .command('dev')
-  .description('Start the Mekta development server with watch mode')
+  .description('Start the Mekta development server')
   .action(() => {
-    console.log(chalk.magenta('Starting Mekta dev server...'));
-    let serverProcess = null;
-    const startServer = () => {
-      if (serverProcess) serverProcess.kill();
-      serverProcess = spawn('node', ['server/server.js'], { stdio: 'inherit' });
-    };
-    startServer();
+    const serverProcess = spawn('node', ['server/server.js'], { stdio: 'inherit' });
     const watcher = chokidar.watch(['core/**/*.js', 'server/**/*.js', '**/*.mek'], {
       ignored: /(^|[\/\\])\../,
       persistent: true
     });
     watcher.on('change', (path) => {
       console.log(chalk.yellow(`\nFile ${path} changed. Restarting server...`));
-      startServer();
-    });
-    process.on('SIGINT', () => {
-      if (serverProcess) serverProcess.kill();
-      process.exit(0);
+      serverProcess.kill();
+      process.exit(0); // Exit so parent can restart
     });
   });
 
-// Default behavior
 if (process.argv.length <= 2) {
   console.log(purpleGradient(ASCII_ART));
   console.log(chalk.bold.magenta('  Mekta Framework - The Future of Agentic UI\n'));
