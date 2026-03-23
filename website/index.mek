@@ -1,52 +1,76 @@
 <style>
-  .hero { text-align: center; padding: 100px 20px; background: linear-gradient(135deg, #1a0a2a, #0a0a0a); }
-  .logo-text { font-size: 5rem; font-weight: 900; color: #8A2BE2; margin: 0; }
-  .tagline { font-size: 1.5rem; color: #9370DB; margin-top: 10px; }
-  .grid { display: flex; gap: 30px; padding: 50px; justify-content: center; flex-wrap: wrap; }
-  .card { background: #111; border: 1px solid #333; padding: 30px; border-radius: 15px; width: 300px; text-align: left; }
-  .card h3 { color: #8A2BE2; margin-top: 0; }
-  .card p { color: #ccc; line-height: 1.6; }
-  .btn-group { margin-top: 30px; display: flex; gap: 15px; justify-content: center; }
-  .btn { padding: 15px 35px; border-radius: 10px; font-weight: bold; cursor: pointer; border: none; }
-  .btn-primary { background: #8A2BE2; color: white; }
-  .btn-secondary { background: transparent; border: 2px solid #8A2BE2; color: #8A2BE2; }
+  .hero { text-align: center; padding: 120px 20px; background: radial-gradient(circle at top, #2a0a3a, #0a0a0a); position: relative; overflow: hidden; }
+  .logo-text { font-size: 6rem; font-weight: 900; color: #8A2BE2; margin: 0; text-shadow: 0 0 50px rgba(138, 43, 226, 0.4); }
+  .tagline { font-size: 1.8rem; color: #9370DB; margin-top: 15px; letter-spacing: 2px; text-transform: uppercase; }
+  .sub-tag { color: #555; margin-top: 20px; font-style: italic; }
+
+  .pro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; padding: 80px 10%; background: #0a0a0a; }
+  .pro-card { background: #111; padding: 40px; border-radius: 20px; border: 1px solid #222; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .pro-card:hover { transform: translateY(-10px); border-color: #8A2BE2; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+  .pro-card h3 { color: #8A2BE2; margin-bottom: 15px; font-size: 1.5rem; }
+  .pro-card p { color: #888; line-height: 1.7; font-size: 1.1rem; }
+
+  .cta-section { text-align: center; padding: 100px; border-top: 1px solid #1a1a1a; }
+  .btn { padding: 18px 45px; border-radius: 12px; font-weight: 900; cursor: pointer; border: none; font-size: 1.2rem; transition: 0.2s; }
+  .btn-primary { background: #8A2BE2; color: white; box-shadow: 0 10px 20px rgba(138, 43, 226, 0.3); }
+  .btn-primary:hover { background: #9370DB; transform: scale(1.05); }
+
+  .code-demo { background: #000; border: 1px solid #333; border-radius: 12px; padding: 25px; max-width: 800px; margin: 0 auto; margin-top: 50px; text-align: left; font-family: 'Fira Code', monospace; }
+  .code-demo .keyword { color: #ff79c6; }
+  .code-demo .string { color: #f1fa8c; }
+  .code-demo .comment { color: #6272a4; }
 </style>
 
 <page>
-  <header style="padding: 20px 50px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222;">
-    <text weight="bold" color="#8A2BE2">MEKTA</text>
-    <container style="display: flex; gap: 20px;">
-      <text>Docs</text>
-      <text>GitHub</text>
-      <text>Showcase</text>
+  <header style="padding: 25px 8%; display: flex; justify-content: space-between; align-items: center; background: rgba(10,10,10,0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100;">
+    <container style="display: flex; align-items: center; gap: 15px;">
+      <img src="mekta-logo.svg" width="40" />
+      <text weight="900" color="white" size="large">MEKTA</text>
     </container>
+    <nav style="display: flex; gap: 30px; font-weight: bold; color: #9370DB;">
+      <text>Architecture</text>
+      <text>Documentation</text>
+      <text>Presets</text>
+      <text color="#8A2BE2">Get CLI</text>
+    </nav>
   </header>
 
   <hero class="hero">
     <text class="logo-text">MEKTA</text>
-    <text class="tagline">1:1 Next.js Experience, Reimagined for AI Agents.</text>
-    <container class="btn-group">
-      <button class="btn btn-primary">Get Started</button>
-      <button class="btn btn-secondary">Read Docs</button>
+    <text class="tagline">1:1 Next.js Workflow. Better Architecture.</text>
+    <text class="sub-tag">The ultimate Agentic UI framework for terminal, web, and PHP ecosystems.</text>
+
+    <container class="code-demo">
+      <text class="comment">// Define a high-fidelity component in Mekta (.mek)</text>
+      <text><text class="keyword">import</text> { Animation } <text class="keyword">from</text> <text class="string">'@mekta/core'</text>;</text>
+      <text>&lt;page&gt;</text>
+      <text>  &lt;text&gt;Hello Architect&lt;/text&gt;</text>
+      <text>&lt;/page&gt;</text>
+    </container>
+
+    <container style="margin-top: 50px;">
+      <button class="btn btn-primary">Initialize Project</button>
     </container>
   </hero>
 
-  <main class="grid">
-    <container class="card">
-      <h3>Multi-Target Build</h3>
-      <text>Compile to React, Static HTML, or PHP with a single command.</text>
+  <section class="pro-grid">
+    <container class="pro-card">
+      <h3>Multi-Target Bridge</h3>
+      <text>Deploy your UI as React components, Static HTML, or PHP templates without changing a single line of code.</text>
     </container>
-    <container class="card">
-      <h3>Agentic DSL</h3>
-      <text>Simplified .mek syntax designed for seamless LLM generation.</text>
+    <container class="pro-card">
+      <h3>Architect Dashboard</h3>
+      <text>A high-fidelity terminal UI for professional builders, featuring real-time system monitoring and log management.</text>
     </container>
-    <container class="card">
-      <h3>Pro Dashboard</h3>
-      <text>A high-fidelity terminal UI inspired by modern dev workflows.</text>
+    <container class="pro-card">
+      <h3>Standard Library</h3>
+      <text>Native state management, DOM helpers, animation bridges, and network utilities built-in for the next-gen UI.</text>
     </container>
-  </main>
+  </section>
 
-  <footer style="text-align: center; padding: 50px; color: #555; border-top: 1px solid #222;">
-    <text>© 2024 Mekta Framework. The Future of Frontend.</text>
+  <footer style="padding: 100px 8%; background: #050505; color: #444; text-align: center; border-top: 1px solid #111;">
+    <text weight="bold" color="#8A2BE2" size="large">MEKTA V1.2.0</text>
+    <text style="margin-top: 15px;">Mekta OS - High-Fidelity UI Framework</text>
+    <text style="margin-top: 40px; font-size: 0.9rem;">© 2024 Mekta Team. Built for the Architect Generation.</text>
   </footer>
 </page>

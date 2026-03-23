@@ -12,159 +12,109 @@ import { listAddons, installAddon } from '../core/addons.js';
 
 const e = React.createElement;
 
-const PurpleBox = ({ children, title }) => (
-  e(Box, { borderStyle: 'round', borderColor: '#8A2BE2', padding: 1, flexDirection: 'column' },
-    title && e(Box, { marginBottom: 1 }, e(Text, { color: '#9370DB', bold: true }, ` ${title} `)),
-    children
+const SidebarItem = ({ label, isSelected }) => (
+  e(Box, { paddingX: 1, backgroundColor: isSelected ? '#8A2BE2' : 'transparent' },
+    e(Text, { color: isSelected ? 'white' : 'gray', bold: isSelected }, `${isSelected ? '❯ ' : '  '}${label}`)
   )
 );
 
 const MektaDashboard = () => {
   const { exit } = useApp();
-  const [mode, setMode] = useState('Architect');
+  const [activeTab, setActiveTab] = useState('Build'); // Build, AI, Addons, Docs, Settings
   const [input, setInput] = useState('');
-  const [logs, setLogs] = useState(['Welcome to Mekta Framework.', 'Type /help for commands.']);
-  const [selection, setSelection] = useState(null);
-  const [activeAddon, setActiveAddon] = useState(null);
+  const [logs, setLogs] = useState(['Mekta OS v1.2.0 initialized.', 'System ready for Architect.']);
+  const [stats, setStats] = useState({ cpu: 0, mem: 0 });
 
-  const addLog = (msg) => setLogs((prev) => [...prev.slice(-10), msg]);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setStats({
+        cpu: Math.floor(Math.random() * 5),
+        mem: Math.floor(Math.random() * 100 + 200)
+      });
+    }, 2000);
+    return () => clearInterval(timer);
+  }, []);
 
   useInput((input, key) => {
-    if (key.escape) {
-      if (selection) setSelection(null);
-      else exit();
-    }
+    if (key.escape) exit();
+    if (key.upArrow && !activeTab.includes('Select')) { /* Cycle tabs? */ }
   });
+
+  const addLog = (msg) => setLogs(prev => [...prev.slice(-8), msg]);
 
   const handleCommand = (cmd) => {
     const trimmed = cmd.trim();
-    if (trimmed === '/help') {
-      addLog('Commands: /new (Templates), /build <file>, /addons, /exit');
-    } else if (trimmed === '/new') {
-      setSelection('template');
-    } else if (trimmed === '/addons') {
-      setSelection('addons');
-    } else if (trimmed.startsWith('/build ')) {
-      const parts = trimmed.split(' ');
-      const file = parts[1];
-      const target = parts[2] || 'react';
-      try {
-        const source = fs.readFileSync(path.resolve(file), 'utf8');
-        const { js } = compile(source, { target });
-        const ext = target === 'react' ? '.js' : (target === 'php' ? '.php' : '.html');
-        fs.writeFileSync(file.replace('.mek', ext), js);
-        addLog(`Build success: ${file} -> ${target.toUpperCase()}`);
-      } catch (err) {
-        addLog(`Build error: ${err.message}`);
-      }
-    } else if (trimmed === '/exit') {
-      exit();
-    } else if (trimmed === '/mode') {
-      const modes = ['Architect', 'Builder', 'Agent'];
-      const nextIdx = (modes.indexOf(mode) + 1) % modes.length;
-      setMode(modes[nextIdx]);
-      addLog(`Switched to ${modes[nextIdx]} mode.`);
-    } else if (trimmed.startsWith('!')) {
-      addLog(`Shell: Executing "${trimmed.slice(1)}"... (Simulated)`);
+    if (trimmed === '/exit') exit();
+    if (trimmed.startsWith('/tab ')) {
+      const tab = trimmed.split(' ')[1];
+      setActiveTab(tab.charAt(0).toUpperCase() + tab.slice(1));
+      addLog(`Switched to ${tab} tab.`);
     } else {
       addLog(`AI: Processing "${trimmed}"...`);
     }
     setInput('');
   };
 
-  const handleTemplateSelect = (item) => {
-    const template = getTemplate(item.value);
-    const filename = `app-${item.value}.mek`;
-    fs.writeFileSync(filename, template);
-    addLog(`SUCCESS: Created ${filename} from ${item.label} template.`);
-    setSelection(null);
-  };
-
-  const handleAddonSelect = (item) => {
-    const success = installAddon(item.value, process.cwd());
-    if (success) addLog(`SUCCESS: Addon ${item.label} installed.`);
-    setSelection(null);
-  };
-
-  const handleAddonHighlight = (item) => {
-    const addon = listAddons().find(a => a.id === item.value);
-    setActiveAddon(addon);
-  };
+  const tabs = ['Build', 'AI Builder', 'Addons', 'Documentation', 'Settings'];
 
   return (
-    e(Box, { flexDirection: 'column', padding: 1, minHeight: 22 },
-      e(BigText, { text: 'MEKTA', colors: ['#8A2BE2', '#9370DB'], font: 'block' }),
-
-      e(Box, { marginBottom: 1 },
-        e(Text, { color: '#E6E6FA' }, 'The Agentic UI Framework for high-fidelity terminal interfaces.')
-      ),
-
-      e(PurpleBox, { title: 'Status Dashboard' },
-        e(Box, { justifyContent: 'space-between' },
-          e(Text, { color: 'cyan' }, `MODE: ${mode}`),
-          e(Text, { color: 'yellow' }, `TARGETS: React | HTML | PHP`),
-          e(Text, { color: 'green' }, 'SYSTEM: Ready')
+    e(Box, { flexDirection: 'column', padding: 1, height: 26, borderStyle: 'double', borderColor: '#8A2BE2' },
+      // Header
+      e(Box, { justifyContent: 'space-between', marginBottom: 1, borderStyle: 'single', borderColor: '#333', paddingX: 1 },
+        e(Box, null,
+          e(Text, { color: '#8A2BE2', bold: true }, 'MEKTA'),
+          e(Text, { color: 'gray' }, ' // ARCHITECT_DASHBOARD')
         ),
-        e(Box, { marginTop: 1, flexDirection: 'column' },
-          logs.map((log, i) => (
-            e(Text, { key: i, color: log.startsWith('SUCCESS') ? 'green' : (i === logs.length - 1 ? 'white' : 'gray') },
-              `${i === logs.length - 1 ? '➜ ' : '  '} ${log}`
-            )
-          ))
+        e(Box, null,
+          e(Text, { color: 'cyan' }, `CPU: ${stats.cpu}%  `),
+          e(Text, { color: 'magenta' }, `MEM: ${stats.mem}MB`)
         )
       ),
 
-      selection === 'template' && e(Box, { marginTop: 1, flexDirection: 'column' },
-        e(Text, { color: 'yellow', bold: true }, '--- SELECT TEMPLATE ---'),
-        e(SelectInput, {
-          items: [
-            { label: 'Standard Web', value: 'web' },
-            { label: 'FiveM UI (Mod)', value: 'fivem' },
-            { label: 'Landing Page', value: 'landing' }
-          ],
-          onSelect: handleTemplateSelect
-        }),
-        e(Text, { color: 'gray' }, 'Esc to go back')
-      ),
+      // Main Content
+      e(Box, { flexGrow: 1 },
+        // Sidebar
+        e(Box, { flexDirection: 'column', width: 20, borderStyle: 'single', borderColor: '#444', marginRight: 1 },
+          tabs.map(t => e(SidebarItem, { key: t, label: t, isSelected: activeTab === t }))
+        ),
 
-      selection === 'addons' && e(Box, { marginTop: 1, flexDirection: 'column' },
-        e(Text, { color: 'cyan', bold: true }, '--- AVAILABLE ADDONS ---'),
-        e(Box, null,
-          e(Box, { width: 30 },
-            e(SelectInput, {
-              items: listAddons().map(a => ({ label: a.name, value: a.id })),
-              onSelect: handleAddonSelect,
-              onHighlight: handleAddonHighlight
-            })
+        // Active Pane
+        e(Box, { flexGrow: 1, flexDirection: 'column', paddingX: 1, borderStyle: 'round', borderColor: '#8A2BE2' },
+          e(Text, { color: '#9370DB', bold: true, underline: true }, `[ ${activeTab.toUpperCase()} ]`),
+
+          e(Box, { marginTop: 1, flexDirection: 'column', flexGrow: 1 },
+            activeTab === 'Build' && e(Box, { flexDirection: 'column' },
+              e(Text, { color: 'yellow' }, 'Ready to compile .mek assets.'),
+              e(Text, { color: 'gray' }, 'Targets: React, HTML, PHP'),
+              e(Text, { color: 'white', marginTop: 1 }, 'Run: /build <file> <target>')
+            ),
+
+            activeTab === 'AI Builder' && e(Box, { flexDirection: 'column' },
+              e(Text, { color: 'cyan' }, 'Agentic UI Generation active.'),
+              e(Text, { color: 'gray' }, 'Waiting for prompt...')
+            ),
+
+            activeTab === 'Addons' && e(Box, { flexDirection: 'column' },
+              e(Text, { color: 'magenta' }, 'Extensions: GSAP, FiveM, Next.js'),
+              e(Text, { color: 'gray' }, 'Type /addons to view list.')
+            )
           ),
-          e(Box, { paddingLeft: 2, flexDirection: 'column', flexGrow: 1 },
-            activeAddon && e(React.Fragment, null,
-              e(Text, { color: 'magenta', underline: true }, activeAddon.name),
-              e(Text, { color: 'white', wrap: 'wrap' }, activeAddon.description),
-              e(Text, { color: 'gray' }, `Package: ${activeAddon.package}`)
-            )
+
+          // Log Box in Pane
+          e(Box, { height: 10, flexDirection: 'column', borderStyle: 'single', borderColor: '#222', paddingX: 1, marginTop: 'auto' },
+            logs.map((log, i) => (
+              e(Text, { key: i, color: i === logs.length - 1 ? 'white' : 'gray' },
+                `${i === logs.length - 1 ? '➜ ' : '  '} ${log}`
+              )
+            ))
           )
-        ),
-        e(Text, { color: 'gray' }, 'Esc to go back')
-      ),
-
-      !selection && e(Box, { marginTop: 1, flexDirection: 'column' },
-        e(Box, { borderStyle: 'single', borderColor: '#444', paddingX: 1 },
-          e(Text, { color: '#8A2BE2' }, '/help for commands  /mode to switch mode  ! for shell mode')
-        ),
-        e(Box, { marginTop: 1 },
-          e(Text, { color: '#9370DB', bold: true }, ' > '),
-          e(TextInput, { value: input, onChange: setInput, onSubmit: handleCommand, placeholder: 'Type a message or /command...' })
         )
       ),
 
-      e(Box, { marginTop: 'auto', borderStyle: 'single', borderColor: '#222', paddingX: 1, justifyContent: 'space-between' },
-        e(Text, { color: 'cyan' }, 'mekta-user'),
-        e(Box, null,
-          e(Text, { color: 'yellow', bold: true }, mode),
-          e(Text, { color: 'gray' }, ' | Anthropic: Mekta-v1.2 | '),
-          e(Text, { color: 'green' }, e(Spinner, { type: 'dots' }), ' 0%')
-        )
+      // Footer / Input
+      e(Box, { marginTop: 1 },
+        e(Text, { color: '#8A2BE2', bold: true }, ' > '),
+        e(TextInput, { value: input, onChange: setInput, onSubmit: handleCommand, placeholder: 'Enter command or /tab name...' })
       )
     )
   );
