@@ -1,0 +1,1 @@
+createElement("page", null, createElement("header", null, createElement("text", null, "Welcome to Mekta")), createElement("main", null, createElement("text", null, "The custom framework of the future."), createElement("button", {"color":"red"}, "Click to get started")), createElement("footer", null, createElement("text", null, "Powered by Mekta AI")))
