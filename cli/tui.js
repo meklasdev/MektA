@@ -4,142 +4,184 @@ import TextInput from 'ink-text-input';
 import SelectInput from 'ink-select-input';
 import BigText from 'ink-big-text';
 import Spinner from 'ink-spinner';
+import chalk from 'chalk';
+import gradient from 'gradient-string';
 import path from 'path';
 import fs from 'fs';
 import { compile } from '../core/compiler.js';
-import { getTemplate } from '../templates/templates.js';
-import { listAddons, installAddon } from '../addons/addons.js';
 
 const e = React.createElement;
+const neonPurple = gradient(['#7c3aed', '#a78bfa']);
+const neonCyan = gradient(['#22d3ee', '#818cf8']);
 
-const SidebarItem = ({ label, isSelected }) => (
-  e(Box, { paddingX: 1, backgroundColor: isSelected ? '#8A2BE2' : 'transparent' },
-    e(Text, { color: isSelected ? 'white' : 'gray', bold: isSelected }, `${isSelected ? '❯ ' : '  '}${label}`)
+// --- Components ---
+
+const Window = ({ children, title }) => (
+  e(Box, {
+    flexDirection: 'column',
+    borderStyle: 'round',
+    borderColor: '#7c3aed',
+    paddingX: 1,
+    minHeight: 28
+  },
+    e(Box, { justifyContent: 'space-between', marginBottom: 1 },
+      e(Text, { color: '#22d3ee', bold: true }, ` ◆ ${title} `),
+      e(Text, { color: '#6b7280' }, 'v1.5_ARCHITECT')
+    ),
+    children
   )
 );
 
-const MektaDashboard = () => {
+const Sidebar = ({ activeTab }) => {
+  const tabs = [
+    { label: 'GENERATE', id: 'generate' },
+    { label: 'BUILD', id: 'build' },
+    { label: 'DEV_SERVER', id: 'dev' },
+    { label: 'DEPLOY', id: 'deploy' },
+    { label: 'SETTINGS', id: 'settings' }
+  ];
+
+  return (
+    e(Box, { flexDirection: 'column', width: 22, borderStyle: 'single', borderColor: '#4b5563', paddingX: 1, marginRight: 1 },
+      e(Box, { marginBottom: 1 }, e(Text, { color: '#a78bfa', bold: true }, 'COMMANDS')),
+      tabs.map(tab => (
+        e(Box, { key: tab.id, backgroundColor: activeTab === tab.id ? '#7c3aed' : 'transparent', paddingX: 1 },
+          e(Text, { color: activeTab === tab.id ? 'white' : '#6b7280', bold: activeTab === tab.id },
+            activeTab === tab.id ? `❯ ${tab.label}` : `  ${tab.label}`
+          )
+        )
+      ))
+    )
+  );
+};
+
+const Console = ({ messages }) => (
+  e(Box, {
+    flexGrow: 1,
+    flexDirection: 'column',
+    paddingX: 2,
+    paddingY: 1,
+    borderStyle: 'single',
+    borderColor: '#374151',
+    backgroundColor: '#0a0a0f'
+  },
+    messages.map((msg, i) => (
+      e(Box, { key: i, marginBottom: 1 },
+        e(Text, { color: msg.type === 'ai' ? '#22d3ee' : '#e5e7eb' },
+          msg.type === 'ai' ? '🤖 ' : '👤 '
+        ),
+        e(Text, { color: msg.type === 'ai' ? '#a78bfa' : 'white' }, msg.text)
+      )
+    ))
+  )
+);
+
+const StatusBar = ({ status, stats }) => (
+  e(Box, {
+    justifyContent: 'space-between',
+    paddingX: 1,
+    marginTop: 1,
+    borderStyle: 'single',
+    borderColor: '#1f2937'
+  },
+    e(Box, null,
+      e(Text, { color: '#6b7280' }, 'STATUS: '),
+      e(Text, { color: status === 'IDLE' ? '#10b981' : '#f59e0b' }, status),
+      e(Text, null, '  '),
+      e(Spinner, { type: 'dots' })
+    ),
+    e(Box, null,
+      e(Text, { color: '#22d3ee' }, `CPU ${stats.cpu}% `),
+      e(Text, { color: '#7c3aed' }, ` RAM ${stats.mem}MB`)
+    )
+  )
+);
+
+// --- Main App ---
+
+const MektaTUI = () => {
   const { exit } = useApp();
-  const [activeTab, setActiveTab] = useState('Overview'); // Overview, Build, AI, Addons, Docs, Settings
+  const [activeTab, setActiveTab] = useState('generate');
   const [input, setInput] = useState('');
-  const [logs, setLogs] = useState(['Mekta Architect OS v1.2.0 initialized.', 'System scanning for components...', 'Ready for Architect input.']);
-  const [stats, setStats] = useState({ cpu: 0, mem: 212, net: 0 });
+  const [messages, setMessages] = useState([
+    { type: 'ai', text: 'Welcome to Mekta Intelligence. How can I help you architect your UI today?' }
+  ]);
+  const [status, setStatus] = useState('IDLE');
+  const [stats, setStats] = useState({ cpu: 2, mem: 412 });
 
   useEffect(() => {
     const timer = setInterval(() => {
       setStats({
-        cpu: Math.floor(Math.random() * 8),
-        mem: Math.floor(Math.random() * 150 + 400),
-        net: Math.floor(Math.random() * 50)
+        cpu: Math.floor(Math.random() * 10),
+        mem: Math.floor(Math.random() * 50 + 400)
       });
-    }, 2000);
+    }, 3000);
     return () => clearInterval(timer);
   }, []);
 
   useInput((input, key) => {
     if (key.escape) exit();
+    if (key.tab) {
+      const tabs = ['generate', 'build', 'dev', 'deploy', 'settings'];
+      const nextIdx = (tabs.indexOf(activeTab) + 1) % tabs.length;
+      setActiveTab(tabs[nextIdx]);
+    }
   });
 
-  const addLog = (msg) => setLogs(prev => [...prev.slice(-10), msg]);
+  const handleCommand = (text) => {
+    const cmd = text.trim();
+    if (cmd === '/exit') exit();
 
-  const handleCommand = (cmd) => {
-    const trimmed = cmd.trim();
-    if (trimmed === '/exit') exit();
-    if (trimmed.startsWith('/tab ')) {
-      const tab = trimmed.split(' ')[1];
-      const found = tabs.find(t => t.toLowerCase() === tab.toLowerCase());
-      if (found) {
-        setActiveTab(found);
-        addLog(`Switched view to ${found}.`);
-      } else {
-        addLog(`ERROR: Tab "${tab}" not found.`);
-      }
-    } else {
-      addLog(`AI: Processing "${trimmed}"...`);
-    }
+    setMessages(prev => [...prev, { type: 'user', text: cmd }]);
+    setStatus('GENERATING');
+
+    // Mock AI Response with typing delay
+    setTimeout(() => {
+      setMessages(prev => [...prev, { type: 'ai', text: `Analyzing "${cmd}"... I will scaffold the .mek components for you immediately.` }]);
+      setStatus('IDLE');
+    }, 1500);
+
     setInput('');
   };
 
-  const tabs = ['Overview', 'Build', 'AI Builder', 'Addons', 'Documentation', 'Settings'];
-
   return (
-    e(Box, { flexDirection: 'column', padding: 1, height: 28, borderStyle: 'double', borderColor: '#8A2BE2' },
-      // Header
-      e(Box, { justifyContent: 'space-between', marginBottom: 1, borderStyle: 'single', borderColor: '#333', paddingX: 1 },
-        e(Box, null,
-          e(Text, { color: '#8A2BE2', bold: true }, 'MEKTA'),
-          e(Text, { color: 'gray' }, ' // ARCHITECT_v1.2 // PRO_CONSOLE')
-        ),
-        e(Box, null,
-          e(Text, { color: 'cyan' }, `CPU: ${stats.cpu}%  `),
-          e(Text, { color: 'magenta' }, `MEM: ${stats.mem}MB  `),
-          e(Text, { color: 'yellow' }, `NET: ${stats.net}Mbps`)
-        )
-      ),
+    e(Box, { flexDirection: 'column', padding: 1 },
+      e(BigText, { text: 'MEKTA', colors: ['#7c3aed', '#22d3ee'], font: 'block' }),
 
-      // Main Layout
-      e(Box, { flexGrow: 1 },
-        // Sidebar
-        e(Box, { flexDirection: 'column', width: 22, borderStyle: 'single', borderColor: '#444', marginRight: 1 },
-          e(Box, { paddingX: 1, marginBottom: 1 }, e(Text, { color: '#9370DB', bold: true }, 'NAVIGATION')),
-          tabs.map(t => e(SidebarItem, { key: t, label: t, isSelected: activeTab === t })),
-          e(Box, { marginTop: 'auto', paddingX: 1 }, e(Text, { color: 'gray' }, 'Esc to quit'))
-        ),
+      e(Window, { title: 'MEKTA_ARCHITECT_CONSOLE' },
+        e(Box, { flexGrow: 1 },
+          e(Sidebar, { activeTab }),
+          e(Box, { flexDirection: 'column', flexGrow: 1 },
+            e(Console, { messages }),
 
-        // Main Workspace
-        e(Box, { flexGrow: 1, flexDirection: 'column', paddingX: 1, borderStyle: 'round', borderColor: '#8A2BE2' },
-          e(Box, { justifyContent: 'space-between', marginBottom: 1 },
-            e(Text, { color: '#9370DB', bold: true, underline: true }, `[ WORKSPACE: ${activeTab.toUpperCase()} ]`),
-            e(Text, { color: 'green' }, 'SYSTEM_OK')
-          ),
-
-          e(Box, { flexGrow: 1, flexDirection: 'column' },
-            activeTab === 'Overview' && e(Box, { flexDirection: 'column' },
-              e(Text, { color: 'white', bold: true }, 'Welcome, Architect.'),
-              e(Text, { color: 'gray', marginTop: 1 }, 'Mekta is ready to compile high-fidelity Agentic UI components.'),
-              e(Box, { marginTop: 2, flexDirection: 'column' },
-                e(Text, { color: 'cyan' }, '• React Target: ACTIVE'),
-                e(Text, { color: 'cyan' }, '• HTML Target: ACTIVE'),
-                e(Text, { color: 'cyan' }, '• PHP Target: ACTIVE'),
-                e(Text, { color: 'yellow', marginTop: 1 }, '• All Standard Libraries: LOADED')
-              )
-            ),
-
-            activeTab === 'Build' && e(Box, { flexDirection: 'column' },
-              e(Text, { color: 'yellow' }, 'Project: /app-production'),
-              e(Text, { color: 'gray' }, 'Current Target: React (default)'),
-              e(Box, { borderStyle: 'single', borderColor: '#333', marginTop: 1, padding: 1 },
-                e(Text, { color: 'white' }, 'mekta build pages/index.mek --target=react')
-              )
-            ),
-
-            activeTab === 'AI Builder' && e(Box, { flexDirection: 'column' },
-              e(Text, { color: 'cyan' }, 'Mekta Intelligence Hub'),
-              e(Box, { marginTop: 1 }, e(Text, { color: 'gray' }, 'Listening for Agentic UI prompts...'))
+            // Input Area
+            e(Box, {
+              marginTop: 1,
+              paddingX: 1,
+              borderStyle: 'single',
+              borderColor: '#7c3aed',
+              backgroundColor: '#0a0a0f'
+            },
+              e(Text, { color: '#22d3ee', bold: true }, ' ❯ '),
+              e(TextInput, {
+                value: input,
+                onChange: setInput,
+                onSubmit: handleCommand,
+                placeholder: 'Describe your UI or enter /command...'
+              })
             )
-          ),
-
-          // Integrated Logs Area
-          e(Box, { height: 12, flexDirection: 'column', borderStyle: 'single', borderColor: '#222', paddingX: 1, marginTop: 'auto' },
-            e(Text, { color: '#444', bold: true, marginBottom: 1 }, 'SYSTEM_LOGS'),
-            logs.map((log, i) => (
-              e(Text, { key: i, color: i === logs.length - 1 ? 'white' : 'gray' },
-                `${i === logs.length - 1 ? '➜ ' : '  '} ${log}`
-              )
-            ))
           )
-        )
+        ),
+        e(StatusBar, { status, stats })
       ),
 
-      // Input Prompt
-      e(Box, { marginTop: 1, borderStyle: 'single', borderColor: '#222', paddingX: 1 },
-        e(Text, { color: '#8A2BE2', bold: true }, ' > '),
-        e(TextInput, { value: input, onChange: setInput, onSubmit: handleCommand, placeholder: 'Enter Architect Command (e.g. /tab AI)...' })
+      e(Box, { marginTop: 1, justifyContent: 'center' },
+        e(Text, { color: '#6b7280' }, 'TAB to switch commands • ESC to exit • ENTER to execute')
       )
     )
   );
 };
 
 export function startTUI() {
-  render(e(MektaDashboard));
+  render(e(MektaTUI));
 }

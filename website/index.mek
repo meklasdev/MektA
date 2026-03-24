@@ -1,76 +1,53 @@
 <style>
-  .hero { text-align: center; padding: 120px 20px; background: radial-gradient(circle at top, #2a0a3a, #0a0a0a); position: relative; overflow: hidden; }
-  .logo-text { font-size: 6rem; font-weight: 900; color: #8A2BE2; margin: 0; text-shadow: 0 0 50px rgba(138, 43, 226, 0.4); }
-  .tagline { font-size: 1.8rem; color: #9370DB; margin-top: 15px; letter-spacing: 2px; text-transform: uppercase; }
-  .sub-tag { color: #555; margin-top: 20px; font-style: italic; }
-
-  .pro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; padding: 80px 10%; background: #0a0a0a; }
-  .pro-card { background: #111; padding: 40px; border-radius: 20px; border: 1px solid #222; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-  .pro-card:hover { transform: translateY(-10px); border-color: #8A2BE2; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
-  .pro-card h3 { color: #8A2BE2; margin-bottom: 15px; font-size: 1.5rem; }
-  .pro-card p { color: #888; line-height: 1.7; font-size: 1.1rem; }
-
-  .cta-section { text-align: center; padding: 100px; border-top: 1px solid #1a1a1a; }
-  .btn { padding: 18px 45px; border-radius: 12px; font-weight: 900; cursor: pointer; border: none; font-size: 1.2rem; transition: 0.2s; }
-  .btn-primary { background: #8A2BE2; color: white; box-shadow: 0 10px 20px rgba(138, 43, 226, 0.3); }
-  .btn-primary:hover { background: #9370DB; transform: scale(1.05); }
-
-  .code-demo { background: #000; border: 1px solid #333; border-radius: 12px; padding: 25px; max-width: 800px; margin: 0 auto; margin-top: 50px; text-align: left; font-family: 'Fira Code', monospace; }
-  .code-demo .keyword { color: #ff79c6; }
-  .code-demo .string { color: #f1fa8c; }
-  .code-demo .comment { color: #6272a4; }
+  .neon-glow { text-shadow: 0 0 30px rgba(124,58,237,0.5); }
+  .feature-card { background: #0a0a0f; border: 1px solid #1f2937; transition: 0.3s; }
+  .feature-card:hover { border-color: #7c3aed; transform: translateY(-5px); }
 </style>
 
-<page>
-  <header style="padding: 25px 8%; display: flex; justify-content: space-between; align-items: center; background: rgba(10,10,10,0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100;">
-    <container style="display: flex; align-items: center; gap: 15px;">
-      <img src="mekta-logo.svg" width="40" />
-      <text weight="900" color="white" size="large">MEKTA</text>
-    </container>
-    <nav style="display: flex; gap: 30px; font-weight: bold; color: #9370DB;">
-      <text>Architecture</text>
-      <text>Documentation</text>
-      <text>Presets</text>
-      <text color="#8A2BE2">Get CLI</text>
+<page class="bg-[#050508] text-[#e5e7eb] min-h-screen">
+  <header class="p-6 flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50">
+    <text class="text-xl font-black tracking-widest text-[#7c3aed]">MEKTA OS</text>
+    <nav class="flex gap-8 text-sm font-medium text-[#6b7280]">
+      <text class="hover:text-white cursor-pointer">Architecture</text>
+      <text class="hover:text-white cursor-pointer">Directives</text>
+      <text class="hover:text-white cursor-pointer text-[#22d3ee]">Get CLI</text>
     </nav>
   </header>
 
-  <hero class="hero">
-    <text class="logo-text">MEKTA</text>
-    <text class="tagline">1:1 Next.js Workflow. Better Architecture.</text>
-    <text class="sub-tag">The ultimate Agentic UI framework for terminal, web, and PHP ecosystems.</text>
+  <main>
+    <hero class="py-32 px-10 text-center relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-r from-violet-600/10 to-cyan-500/10 blur-[120px]" />
+      <text class="text-8xl font-black tracking-tighter neon-glow mb-4">RE-ARCHITECTED</text>
+      <text class="text-2xl text-[#6b7280] max-w-2xl mx-auto">Mekta v1.5: The high-fidelity Agentic UI framework for terminal and web ecosystems.</text>
 
-    <container class="code-demo">
-      <text class="comment">// Define a high-fidelity component in Mekta (.mek)</text>
-      <text><text class="keyword">import</text> { Animation } <text class="keyword">from</text> <text class="string">'@mekta/core'</text>;</text>
-      <text>&lt;page&gt;</text>
-      <text>  &lt;text&gt;Hello Architect&lt;/text&gt;</text>
-      <text>&lt;/page&gt;</text>
-    </container>
+      <container class="mt-12 flex justify-center gap-4">
+        <button class="bg-[#7c3aed] text-white px-10 py-4 rounded-xl font-bold shadow-2xl shadow-violet-500/20">npx mekta dashboard</button>
+        <button class="bg-white/5 border border-white/10 px-10 py-4 rounded-xl font-bold hover:bg-white/10">Read Architecture</button>
+      </container>
+    </hero>
 
-    <container style="margin-top: 50px;">
-      <button class="btn btn-primary">Initialize Project</button>
-    </container>
-  </hero>
+    <section class="grid grid-cols-3 gap-8 px-20 py-20 border-t border-white/5">
+      <container class="feature-card p-10 rounded-2xl">
+        <text class="text-[#22d3ee] font-mono text-sm mb-4">01 // COMPILER</text>
+        <text class="text-2xl font-bold mb-2">Multi-Target</text>
+        <text class="text-[#6b7280] leading-relaxed">Compile .mek source to React SSR, Static HTML, or PHP templates without modification.</text>
+      </container>
 
-  <section class="pro-grid">
-    <container class="pro-card">
-      <h3>Multi-Target Bridge</h3>
-      <text>Deploy your UI as React components, Static HTML, or PHP templates without changing a single line of code.</text>
-    </container>
-    <container class="pro-card">
-      <h3>Architect Dashboard</h3>
-      <text>A high-fidelity terminal UI for professional builders, featuring real-time system monitoring and log management.</text>
-    </container>
-    <container class="pro-card">
-      <h3>Standard Library</h3>
-      <text>Native state management, DOM helpers, animation bridges, and network utilities built-in for the next-gen UI.</text>
-    </container>
-  </section>
+      <container class="feature-card p-10 rounded-2xl">
+        <text class="text-[#a78bfa] font-mono text-sm mb-4">02 // INTERFACE</text>
+        <text class="text-2xl font-bold mb-2">Architect TUI</text>
+        <text class="text-[#6b7280] leading-relaxed">A professional high-fidelity terminal console with AI-assisted scaffolding and hot-reload.</text>
+      </container>
 
-  <footer style="padding: 100px 8%; background: #050505; color: #444; text-align: center; border-top: 1px solid #111;">
-    <text weight="bold" color="#8A2BE2" size="large">MEKTA V1.2.0</text>
-    <text style="margin-top: 15px;">Mekta OS - High-Fidelity UI Framework</text>
-    <text style="margin-top: 40px; font-size: 0.9rem;">© 2024 Mekta Team. Built for the Architect Generation.</text>
+      <container class="feature-card p-10 rounded-2xl">
+        <text class="text-[#f472b6] font-mono text-sm mb-4">03 // RUNTIME</text>
+        <text class="text-2xl font-bold mb-2">Standard Lib</text>
+        <text class="text-[#6b7280] leading-relaxed">Native support for Auth, State, DB, and professional UI components out of the box.</text>
+      </container>
+    </section>
+  </main>
+
+  <footer class="p-20 text-center border-t border-white/5 bg-black/50">
+    <text class="text-sm text-[#4b5563]">Mekta OS v1.5.0_Architect // Built for the next generation of builders.</text>
   </footer>
 </page>
