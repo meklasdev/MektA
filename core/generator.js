@@ -1,5 +1,5 @@
 /**
- * Mekta Multi-Target Code Generator (v1.5 Architect Edition)
+ * Mekta Multi-Target Code Generator (v1.6 Architect Edition)
  * Production-ready compilation for React, Static HTML, and PHP.
  */
 
@@ -12,11 +12,14 @@ export function generate(node, target = 'react') {
 }
 
 /**
- * React Backend (v1.5)
+ * React Backend (v1.6)
  */
 function generateReact(node) {
   switch (node.type) {
     case 'Program':
+      if (node.body.length > 1) {
+         return `createElement(React.Fragment, null, ${node.body.map(generateReact).join(',\n')})`;
+      }
       return node.body.map(generateReact).join(',\n');
 
     case 'Fragment':
@@ -56,7 +59,11 @@ function generateReact(node) {
 
       const propsObj = mappedPropEntries.length > 0 ? `{ ${mappedPropEntries.join(', ')} }` : 'null';
       const children = node.children.map(generateReact).filter(Boolean).join(', ');
-      return `createElement("${node.tag}", ${propsObj}${children ? `, ${children}` : ''})`;
+
+      // Intelligent Tag Mapping (Component vs String)
+      const tag = (node.tag[0] === node.tag[0].toUpperCase()) ? node.tag : `"${node.tag}"`;
+
+      return `createElement(${tag}, ${propsObj}${children ? `, ${children}` : ''})`;
 
     case 'TextNode':
       return `"${node.value.replace(/"/g, '\\"')}"`;
@@ -73,18 +80,28 @@ function generateReact(node) {
 }
 
 /**
- * Static HTML Backend (v1.5)
+ * Static HTML Backend (v1.6)
  */
 function generateHTML(node) {
+  const tagMap = {
+    'page': 'div',
+    'text': 'p',
+    'box': 'div',
+    'hero': 'section',
+    'card': 'div',
+    'grid': 'div'
+  };
+
   switch (node.type) {
     case 'Program': return node.body.map(generateHTML).join('\n');
     case 'Fragment': return node.children.map(generateHTML).join('');
     case 'Element':
+      const tag = tagMap[node.tag.toLowerCase()] || node.tag.toLowerCase();
       const props = Object.entries(node.props)
         .filter(([k]) => !k.startsWith('m-'))
         .map(([k, v]) => ` ${k}="${v.value}"`).join('');
       const children = node.children.map(generateHTML).join('');
-      return `<${node.tag}${props}>${children}</${node.tag}>`;
+      return `<${tag}${props}>${children}</${tag}>`;
     case 'TextNode': return node.value;
     case 'ExpressionNode': return `{{ ${node.value} }}`;
     case 'CommentNode': return `<!-- ${node.value} -->`;
@@ -93,12 +110,12 @@ function generateHTML(node) {
 }
 
 /**
- * PHP Template Backend (v1.5 Architect Edition)
+ * PHP Template Backend (v1.6)
  */
 function generatePHP(node) {
   switch (node.type) {
     case 'Program':
-      return '<?php\n/** MEKTA_PHP_TARGET_v1.5 */\n' +
+      return '<?php\n/** MEKTA_PHP_TARGET_v1.6 */\n' +
              node.body.map(n => `echo "${generateHTML(n).replace(/"/g, '\\"')}";`).join('\n') +
              '\n?>';
     default:

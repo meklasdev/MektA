@@ -16,10 +16,19 @@ const app = express();
 app.use(express.json());
 
 /**
- * Enhanced multi-target rendering
+ * Enhanced multi-target rendering with Layout support
  */
-function renderMekAllTargets(mekCode, params = {}) {
-  const { js, css } = compile(mekCode, { target: 'react' });
+function renderMekChain(pageCode, layoutChain = [], params = {}) {
+  // Wrap page in layouts recursively
+  let finalMek = pageCode;
+
+  for (let i = layoutChain.length - 1; i >= 0; i--) {
+     const layoutCode = fs.readFileSync(layoutChain[i], 'utf8');
+     // Inject content into {children} placeholder in layout
+     finalMek = layoutCode.replace('{children}', finalMek);
+  }
+
+  const { js, css } = compile(finalMek, { target: 'react' });
 
   const context = {
     createElement,
@@ -34,9 +43,8 @@ function renderMekAllTargets(mekCode, params = {}) {
   return { ssrHtml, css };
 }
 
-// Catch-all route for file-system routing
+// Routes - Catch-all for file-system routing
 app.get('*', (req, res) => {
-  // Ignore favicon.ico
   if (req.path === '/favicon.ico') return res.status(204).end();
 
   const route = resolveRoute(req.path);
@@ -44,11 +52,11 @@ app.get('*', (req, res) => {
     return res.status(404).send(`
       <html>
         <head><title>404 - Not Found</title></head>
-        <body style="font-family: sans-serif; background: #0a0a0a; color: #fff; display: flex; align-items: center; justify-content: center; height: 100vh;">
-          <div style="text-align: center;">
-            <h1 style="color: #ff00ff;">404</h1>
-            <p>Page not found: ${req.path}</p>
-            <a href="/" style="color: #00ffff;">Back Home</a>
+        <body style="font-family: sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
+          <div style="text-align: center; border: 1px solid #334155; padding: 2rem; border-radius: 0.5rem; background: #1e293b;">
+            <h1 style="color: #6366f1; margin: 0;">404</h1>
+            <p style="color: #94a3b8;">Resource not mapped: ${req.path}</p>
+            <a href="/" style="color: #818cf8; text-decoration: none; border-bottom: 1px solid;">Return to Base</a>
           </div>
         </body>
       </html>
@@ -57,13 +65,13 @@ app.get('*', (req, res) => {
 
   try {
     const mekCode = fs.readFileSync(route.file, 'utf8');
-    const { ssrHtml, css } = renderMekAllTargets(mekCode, route.params);
+    const { ssrHtml, css } = renderMekChain(mekCode, route.layouts, route.params);
     res.send(`
       <html>
         <head>
-          <title>Mekta App</title>
+          <title>Mekta Architect</title>
           <style>${css}</style>
-          <style>body { margin: 0; background: #0a0a0a; color: #fff; font-family: sans-serif; }</style>
+          <style>body { margin: 0; background: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }</style>
         </head>
         <body>
           <div id="root">${ssrHtml}</div>
@@ -71,12 +79,11 @@ app.get('*', (req, res) => {
       </html>
     `);
   } catch (err) {
-    console.error(chalk.red(`Error rendering ${req.path}:`), err);
     res.status(500).send(`<pre>${err.stack}</pre>`);
   }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(chalk.magenta(`Mekta Architect server running at http://localhost:${PORT}`));
+  console.log(chalk.cyan(`[Mekta] Server online at http://localhost:${PORT}`));
 });

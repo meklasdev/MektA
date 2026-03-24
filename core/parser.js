@@ -1,5 +1,5 @@
 /**
- * Mekta Robust Tokenizer (v1.5 Architect Edition)
+ * Mekta Robust Tokenizer (v1.6 Architect Edition)
  * Supports line/column tracking, fragments, comments, and expressions.
  */
 export function tokenize(input) {
@@ -7,6 +7,7 @@ export function tokenize(input) {
   let cursor = 0;
   let line = 1;
   let column = 1;
+  let inTag = false;
 
   while (cursor < input.length) {
     let char = input[cursor];
@@ -25,7 +26,7 @@ export function tokenize(input) {
     };
 
     // Handle Expressions { ... }
-    if (char === '{') {
+    if (char === '{' && !inTag) {
       let value = '';
       let braceCount = 1;
       cursor++;
@@ -74,10 +75,11 @@ export function tokenize(input) {
     }
 
     // Handle Self-Closing />
-    if (char === '/' && nextChar === '>') {
+    if (char === '/' && nextChar === '>' && inTag) {
       tokens.push({ type: 'SELF_CLOSE_TAG_END', line, column });
       cursor += 2;
       column += 2;
+      inTag = false;
       continue;
     }
 
@@ -86,22 +88,25 @@ export function tokenize(input) {
         tokens.push({ type: 'CLOSE_TAG_START', value: '</', line, column });
         cursor += 2;
         column += 2;
+        inTag = true;
       } else {
         tokens.push({ type: 'OPEN_TAG_START', value: '<', line, column });
         cursor += 1;
         column += 1;
+        inTag = true;
       }
       continue;
     }
 
-    if (char === '>') {
+    if (char === '>' && inTag) {
       tokens.push({ type: 'TAG_END', value: '>', line, column });
       cursor += 1;
       column += 1;
+      inTag = false;
       continue;
     }
 
-    if (char === '=') {
+    if (char === '=' && inTag) {
       tokens.push({ type: 'EQUALS', value: '=', line, column });
       cursor += 1;
       column += 1;
@@ -113,7 +118,7 @@ export function tokenize(input) {
       continue;
     }
 
-    if (char === '"' || char === "'") {
+    if ((char === '"' || char === "'") && inTag) {
       const quote = char;
       let value = '';
       cursor += 1;
@@ -126,16 +131,27 @@ export function tokenize(input) {
       continue;
     }
 
-    // Identify tokens based on context
-    const lastToken = tokens[tokens.length - 1];
-    const isInsideTag = lastToken && (
-      lastToken.type === 'OPEN_TAG_START' ||
-      lastToken.type === 'CLOSE_TAG_START' ||
-      lastToken.type === 'IDENTIFIER' ||
-      lastToken.type === 'EQUALS'
-    );
+    // Expressions inside tags {prop={val}}
+    if (char === '{' && inTag) {
+        let value = '';
+        let braceCount = 1;
+        cursor++;
+        column++;
+        while (cursor < input.length && braceCount > 0) {
+          if (input[cursor] === '{') braceCount++;
+          if (input[cursor] === '}') braceCount--;
+          if (braceCount > 0) {
+            value += input[cursor];
+            updatePos(input[cursor]);
+          }
+        }
+        cursor++;
+        column++;
+        tokens.push({ type: 'EXPRESSION', value: value.trim(), line, column });
+        continue;
+    }
 
-    if (isInsideTag) {
+    if (inTag) {
       let identifier = '';
       while (cursor < input.length && /[a-zA-Z0-9-:]/.test(input[cursor])) {
         identifier += input[cursor];
@@ -166,7 +182,7 @@ export function tokenize(input) {
 }
 
 /**
- * Mekta Robust Recursive Descent Parser (v1.5 Architect Edition)
+ * Mekta Robust Recursive Descent Parser (v1.6 Architect Edition)
  */
 export function parse(tokens) {
   let current = 0;
