@@ -9,7 +9,7 @@ import { startTUI } from './tui.js';
 import fs from 'fs';
 import path from 'path';
 import { compile } from '../core/compiler.js';
-import { getTemplate } from '../templates/templates.js';
+import { getTemplate, listTemplates, getNextBridgeLinks } from '../templates/templates.js';
 import { listAddons, installAddon } from '../addons/addons.js';
 import { spawn } from 'child_process';
 import chokidar from 'chokidar';
@@ -35,7 +35,7 @@ program
   });
 
 /**
- * Interactive Create Command
+ * Create Command (Legacy)
  */
 program
   .command('create [name]')
@@ -52,11 +52,7 @@ program
         type: 'select',
         name: 'template',
         message: 'Architecture Preset:',
-        choices: [
-          { title: 'Standard Web (React SSR)', value: 'web' },
-          { title: 'FiveM UI (Neon Mod)', value: 'fivem' },
-          { title: 'AI Landing Page', value: 'landing' }
-        ]
+        choices: listTemplates().map(t => ({ title: t.name, value: t.name, description: t.description }))
       }
     ]);
 
@@ -85,6 +81,37 @@ program
 
     console.log(chalk.magenta(`\n◆ Project ${finalName} architected successfully!`));
     console.log(chalk.gray(`  cd ${finalName}\n  npx mekta dashboard`));
+  });
+
+/**
+ * Clone Command (New)
+ */
+program
+  .command('clone <template>')
+  .description('Directly clone a Mekta architect preset')
+  .action((template) => {
+    const t = getTemplate(template);
+    if (!t) {
+      console.log(chalk.red(`Error: Template ${template} not found.`));
+      return;
+    }
+    const filename = `${template}-starter.mek`;
+    fs.writeFileSync(filename, t);
+    console.log(chalk.green(`✔ Created ${filename}`));
+  });
+
+/**
+ * Bridge Command (New)
+ */
+program
+  .command('bridge')
+  .description('Get links to popular Next.js templates for use in Mekta')
+  .action(() => {
+    console.log(chalk.magenta('\n◆ High-Fidelity Next.js Starters (Bridge):'));
+    getNextBridgeLinks().forEach(l => {
+       console.log(chalk.cyan(`  - ${l.title}:`), chalk.gray(l.url));
+    });
+    console.log(chalk.gray('\n  Tip: Use these as inspiration for your .mek components.'));
   });
 
 /**
@@ -156,7 +183,7 @@ program
     });
   });
 
-// Default behavior: Launch TUI if no args
+// Default behavior: Launch Dashboard if no args
 if (process.argv.length <= 2) {
   startTUI();
 } else {

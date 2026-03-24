@@ -1,187 +1,181 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { render, Box, Text, useInput, useApp } from 'ink';
-import TextInput from 'ink-text-input';
-import SelectInput from 'ink-select-input';
-import BigText from 'ink-big-text';
 import Spinner from 'ink-spinner';
-import chalk from 'chalk';
-import gradient from 'gradient-string';
 import path from 'path';
 import fs from 'fs';
-import { compile } from '../core/compiler.js';
+import { listTemplates, getNextBridgeLinks } from '../templates/templates.js';
 
 const e = React.createElement;
-const neonPurple = gradient(['#7c3aed', '#a78bfa']);
-const neonCyan = gradient(['#22d3ee', '#818cf8']);
 
 // --- Components ---
 
-const Window = ({ children, title }) => (
+const Header = () => (
+  e(Box, {
+    paddingX: 2,
+    marginBottom: 0,
+    borderStyle: 'single',
+    borderColor: '#475569',
+    justifyContent: 'space-between'
+  },
+    e(Text, { color: '#94a3b8', bold: true }, ' ▣ MEKTA v1.5 ARCHITECT CORE '),
+    e(Text, { color: '#64748b' }, `[ ${new Date().toLocaleTimeString()} ]`)
+  )
+);
+
+const Pane = ({ title, children, width, height, color = '#334155' }) => (
   e(Box, {
     flexDirection: 'column',
+    width,
+    height,
     borderStyle: 'round',
-    borderColor: '#7c3aed',
+    borderColor: color,
     paddingX: 1,
-    minHeight: 28
+    marginX: 0
   },
-    e(Box, { justifyContent: 'space-between', marginBottom: 1 },
-      e(Text, { color: '#22d3ee', bold: true }, ` ◆ ${title} `),
-      e(Text, { color: '#6b7280' }, 'v1.5_ARCHITECT')
+    e(Box, { marginBottom: 1 },
+      e(Text, { color: '#64748b', bold: true }, ` ${title.toUpperCase()} `)
     ),
     children
   )
 );
 
-const Sidebar = ({ activeTab }) => {
-  const tabs = [
-    { label: 'GENERATE', id: 'generate' },
-    { label: 'BUILD', id: 'build' },
-    { label: 'DEV_SERVER', id: 'dev' },
-    { label: 'DEPLOY', id: 'deploy' },
-    { label: 'SETTINGS', id: 'settings' }
-  ];
+const FileList = ({ files }) => (
+  e(Box, { flexDirection: 'column' },
+    files.map((file, i) => (
+      e(Box, { key: i },
+        e(Text, { color: '#475569' }, '  ├ '),
+        e(Text, { color: '#cbd5e1' }, file)
+      )
+    )),
+    e(Box, null, e(Text, { color: '#475569' }, '  └ '), e(Text, { color: '#475569', italic: true }, '(end of tree)'))
+  )
+);
 
-  return (
-    e(Box, { flexDirection: 'column', width: 22, borderStyle: 'single', borderColor: '#4b5563', paddingX: 1, marginRight: 1 },
-      e(Box, { marginBottom: 1 }, e(Text, { color: '#a78bfa', bold: true }, 'COMMANDS')),
-      tabs.map(tab => (
-        e(Box, { key: tab.id, backgroundColor: activeTab === tab.id ? '#7c3aed' : 'transparent', paddingX: 1 },
-          e(Text, { color: activeTab === tab.id ? 'white' : '#6b7280', bold: activeTab === tab.id },
-            activeTab === tab.id ? `❯ ${tab.label}` : `  ${tab.label}`
-          )
-        )
-      ))
-    )
-  );
-};
-
-const Console = ({ messages }) => (
-  e(Box, {
-    flexGrow: 1,
-    flexDirection: 'column',
-    paddingX: 2,
-    paddingY: 1,
-    borderStyle: 'single',
-    borderColor: '#374151',
-    backgroundColor: '#0a0a0f'
-  },
-    messages.map((msg, i) => (
-      e(Box, { key: i, marginBottom: 1 },
-        e(Text, { color: msg.type === 'ai' ? '#22d3ee' : '#e5e7eb' },
-          msg.type === 'ai' ? '🤖 ' : '👤 '
-        ),
-        e(Text, { color: msg.type === 'ai' ? '#a78bfa' : 'white' }, msg.text)
+const RouteList = ({ routes }) => (
+  e(Box, { flexDirection: 'column' },
+    routes.map((route, i) => (
+      e(Box, { key: i, marginBottom: 0 },
+        e(Text, { color: '#10b981' }, '  ● '),
+        e(Text, { color: '#f1f5f9' }, route.path.padEnd(15)),
+        e(Text, { color: '#64748b' }, ` → ${route.file}`)
       )
     ))
   )
 );
 
-const StatusBar = ({ status, stats }) => (
-  e(Box, {
-    justifyContent: 'space-between',
-    paddingX: 1,
-    marginTop: 1,
-    borderStyle: 'single',
-    borderColor: '#1f2937'
-  },
+const TemplateBrowser = () => (
+  e(Box, { flexDirection: 'column' },
+    listTemplates().map((t, i) => (
+      e(Box, { key: i },
+        e(Text, { color: '#818cf8' }, ` [${t.name}] `),
+        e(Text, { color: '#64748b' }, t.description)
+      )
+    ))
+  )
+);
+
+const LogConsole = ({ logs }) => (
+  e(Box, { flexDirection: 'column', flexGrow: 1, overflowY: 'hidden' },
+    logs.slice(-10).map((log, i) => (
+      e(Box, { key: i },
+        e(Text, { color: '#475569' }, `[${log.time}] `),
+        e(Text, { color: log.type === 'error' ? '#ef4444' : (log.type === 'success' ? '#10b981' : '#94a3b8') }, log.text)
+      )
+    ))
+  )
+);
+
+const Stats = ({ stats }) => (
+  e(Box, { justifyContent: 'space-between', paddingX: 1, borderStyle: 'single', borderColor: '#334155', marginTop: 0 },
     e(Box, null,
-      e(Text, { color: '#6b7280' }, 'STATUS: '),
-      e(Text, { color: status === 'IDLE' ? '#10b981' : '#f59e0b' }, status),
+      e(Text, { color: '#64748b' }, 'SYSTEM: '),
+      e(Text, { color: '#10b981' }, 'STABLE'),
       e(Text, null, '  '),
       e(Spinner, { type: 'dots' })
     ),
     e(Box, null,
-      e(Text, { color: '#22d3ee' }, `CPU ${stats.cpu}% `),
-      e(Text, { color: '#7c3aed' }, ` RAM ${stats.mem}MB`)
+      e(Text, { color: '#475569' }, `PID ${process.pid} `),
+      e(Text, { color: '#64748b' }, ` MEM ${stats.mem}MB`)
     )
   )
 );
 
 // --- Main App ---
 
-const MektaTUI = () => {
+const MektaDashboard = () => {
   const { exit } = useApp();
-  const [activeTab, setActiveTab] = useState('generate');
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([
-    { type: 'ai', text: 'Welcome to Mekta Intelligence. How can I help you architect your UI today?' }
+  const [stats, setStats] = useState({ mem: Math.floor(process.memoryUsage().heapUsed / 1024 / 1024) });
+  const [logs, setLogs] = useState([
+    { time: new Date().toLocaleTimeString(), type: 'info', text: 'Initializing Mekta Architect Engine...' },
+    { time: new Date().toLocaleTimeString(), type: 'success', text: 'V8 Context Layer Online.' },
+    { time: new Date().toLocaleTimeString(), type: 'success', text: 'Nested Layout Bridge Ready.' }
   ]);
-  const [status, setStatus] = useState('IDLE');
-  const [stats, setStats] = useState({ cpu: 2, mem: 412 });
+
+  const files = useMemo(() => {
+    try {
+      const allFiles = [];
+      const scan = (dir) => {
+         const entries = fs.readdirSync(dir, { withFileTypes: true });
+         for (const entry of entries) {
+            const res = path.join(dir, entry.name).replace(/\\/g, '/');
+            if (entry.isDirectory()) scan(res);
+            else if (res.endsWith('.mek')) allFiles.push(res);
+         }
+      };
+      if (fs.existsSync('./pages')) scan('pages');
+      return allFiles.length > 0 ? allFiles : ['pages/index.mek'];
+    } catch (e) { return ['pages/index.mek']; }
+  }, []);
+
+  const routes = useMemo(() => {
+    return files.map(f => {
+       let p = f.replace('pages', '').replace('.mek', '').replace(/\\/g, '/');
+       if (p.endsWith('index')) p = p.slice(0, -5);
+       if (p === '') p = '/';
+       return { path: p, file: f };
+    });
+  }, [files]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setStats({
-        cpu: Math.floor(Math.random() * 10),
-        mem: Math.floor(Math.random() * 50 + 400)
-      });
-    }, 3000);
+      setStats({ mem: Math.floor(process.memoryUsage().heapUsed / 1024 / 1024) });
+    }, 2000);
     return () => clearInterval(timer);
   }, []);
 
   useInput((input, key) => {
-    if (key.escape) exit();
-    if (key.tab) {
-      const tabs = ['generate', 'build', 'dev', 'deploy', 'settings'];
-      const nextIdx = (tabs.indexOf(activeTab) + 1) % tabs.length;
-      setActiveTab(tabs[nextIdx]);
-    }
+    if (key.escape || (input === 'q')) exit();
   });
 
-  const handleCommand = (text) => {
-    const cmd = text.trim();
-    if (cmd === '/exit') exit();
-
-    setMessages(prev => [...prev, { type: 'user', text: cmd }]);
-    setStatus('GENERATING');
-
-    // Mock AI Response with typing delay
-    setTimeout(() => {
-      setMessages(prev => [...prev, { type: 'ai', text: `Analyzing "${cmd}"... I will scaffold the .mek components for you immediately.` }]);
-      setStatus('IDLE');
-    }, 1500);
-
-    setInput('');
-  };
-
   return (
-    e(Box, { flexDirection: 'column', padding: 1 },
-      e(BigText, { text: 'MEKTA', colors: ['#7c3aed', '#22d3ee'], font: 'block' }),
+    e(Box, { flexDirection: 'column', padding: 1, width: 100 },
+      e(Header),
 
-      e(Window, { title: 'MEKTA_ARCHITECT_CONSOLE' },
-        e(Box, { flexGrow: 1 },
-          e(Sidebar, { activeTab }),
-          e(Box, { flexDirection: 'column', flexGrow: 1 },
-            e(Console, { messages }),
-
-            // Input Area
-            e(Box, {
-              marginTop: 1,
-              paddingX: 1,
-              borderStyle: 'single',
-              borderColor: '#7c3aed',
-              backgroundColor: '#0a0a0f'
-            },
-              e(Text, { color: '#22d3ee', bold: true }, ' ❯ '),
-              e(TextInput, {
-                value: input,
-                onChange: setInput,
-                onSubmit: handleCommand,
-                placeholder: 'Describe your UI or enter /command...'
-              })
-            )
-          )
+      e(Box, { flexGrow: 1 },
+        e(Pane, { title: 'Source Files', width: 35, height: 15 },
+          e(FileList, { files })
         ),
-        e(StatusBar, { status, stats })
+        e(Pane, { title: 'Virtual Mapping', width: 45, height: 15 },
+          e(RouteList, { routes })
+        ),
+        e(Pane, { title: 'Presets', width: 20, height: 15 },
+          e(TemplateBrowser)
+        )
       ),
 
+      e(Pane, { title: 'Architecture System Trace', width: 100, height: 10, color: '#334155' },
+        e(LogConsole, { logs })
+      ),
+
+      e(Stats, { stats }),
+
       e(Box, { marginTop: 1, justifyContent: 'center' },
-        e(Text, { color: '#6b7280' }, 'TAB to switch commands • ESC to exit • ENTER to execute')
+        e(Text, { color: '#475569' }, 'Press ESC or Q to shutdown • Architect Edition v1.5.0')
       )
     )
   );
 };
 
 export function startTUI() {
-  render(e(MektaTUI));
+  render(e(MektaDashboard));
 }
