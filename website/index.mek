@@ -1,0 +1,53 @@
+<style>
+  .neon-glow { text-shadow: 0 0 30px rgba(124,58,237,0.5); }
+  .feature-card { background: #0a0a0f; border: 1px solid #1f2937; transition: 0.3s; }
+  .feature-card:hover { border-color: #7c3aed; transform: translateY(-5px); }
+</style>
+
+<page class="bg-[#050508] text-[#e5e7eb] min-h-screen">
+  <header class="p-6 flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50">
+    <text class="text-xl font-black tracking-widest text-[#7c3aed]">MEKTA OS</text>
+    <nav class="flex gap-8 text-sm font-medium text-[#6b7280]">
+      <text class="hover:text-white cursor-pointer">Architecture</text>
+      <text class="hover:text-white cursor-pointer">Directives</text>
+      <text class="hover:text-white cursor-pointer text-[#22d3ee]">Get CLI</text>
+    </nav>
+  </header>
+
+  <main>
+    <hero class="py-32 px-10 text-center relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-r from-violet-600/10 to-cyan-500/10 blur-[120px]" />
+      <text class="text-8xl font-black tracking-tighter neon-glow mb-4">RE-ARCHITECTED</text>
+      <text class="text-2xl text-[#6b7280] max-w-2xl mx-auto">Mekta v1.5: The high-fidelity Agentic UI framework for terminal and web ecosystems.</text>
+
+      <container class="mt-12 flex justify-center gap-4">
+        <button class="bg-[#7c3aed] text-white px-10 py-4 rounded-xl font-bold shadow-2xl shadow-violet-500/20">npx mekta dashboard</button>
+        <button class="bg-white/5 border border-white/10 px-10 py-4 rounded-xl font-bold hover:bg-white/10">Read Architecture</button>
+      </container>
+    </hero>
+
+    <section class="grid grid-cols-3 gap-8 px-20 py-20 border-t border-white/5">
+      <container class="feature-card p-10 rounded-2xl">
+        <text class="text-[#22d3ee] font-mono text-sm mb-4">01 // COMPILER</text>
+        <text class="text-2xl font-bold mb-2">Multi-Target</text>
+        <text class="text-[#6b7280] leading-relaxed">Compile .mek source to React SSR, Static HTML, or PHP templates without modification.</text>
+      </container>
+
+      <container class="feature-card p-10 rounded-2xl">
+        <text class="text-[#a78bfa] font-mono text-sm mb-4">02 // INTERFACE</text>
+        <text class="text-2xl font-bold mb-2">Architect TUI</text>
+        <text class="text-[#6b7280] leading-relaxed">A professional high-fidelity terminal console with AI-assisted scaffolding and hot-reload.</text>
+      </container>
+
+      <container class="feature-card p-10 rounded-2xl">
+        <text class="text-[#f472b6] font-mono text-sm mb-4">03 // RUNTIME</text>
+        <text class="text-2xl font-bold mb-2">Standard Lib</text>
+        <text class="text-[#6b7280] leading-relaxed">Native support for Auth, State, DB, and professional UI components out of the box.</text>
+      </container>
+    </section>
+  </main>
+
+  <footer class="p-20 text-center border-t border-white/5 bg-black/50">
+    <text class="text-sm text-[#4b5563]">Mekta OS v1.5.0_Architect // Built for the next generation of builders.</text>
+  </footer>
+</page>

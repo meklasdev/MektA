@@ -1,38 +1,115 @@
 /**
- * Simple Tokenizer for .mek files
+ * Mekta Robust Tokenizer (v1.5 Architect Edition)
+ * Supports line/column tracking, fragments, comments, and expressions.
  */
 export function tokenize(input) {
   const tokens = [];
   let cursor = 0;
+  let line = 1;
+  let column = 1;
 
   while (cursor < input.length) {
-    const char = input[cursor];
+    let char = input[cursor];
+    const nextChar = input[cursor + 1];
+
+    const updatePos = (str) => {
+      for (const c of str) {
+        if (c === '\n') {
+          line++;
+          column = 1;
+        } else {
+          column++;
+        }
+      }
+      cursor += str.length;
+    };
+
+    // Handle Expressions { ... }
+    if (char === '{') {
+      let value = '';
+      let braceCount = 1;
+      cursor++;
+      column++;
+      while (cursor < input.length && braceCount > 0) {
+        if (input[cursor] === '{') braceCount++;
+        if (input[cursor] === '}') braceCount--;
+        if (braceCount > 0) {
+          value += input[cursor];
+          updatePos(input[cursor]);
+        }
+      }
+      cursor++;
+      column++;
+      tokens.push({ type: 'EXPRESSION', value: value.trim(), line, column });
+      continue;
+    }
+
+    // Handle Comments <!-- -->
+    if (char === '<' && input.slice(cursor, cursor + 4) === '<!--') {
+      let value = '';
+      cursor += 4;
+      while (cursor < input.length && input.slice(cursor, cursor + 3) !== '-->') {
+        value += input[cursor];
+        updatePos(input[cursor]);
+      }
+      cursor += 3;
+      tokens.push({ type: 'COMMENT', value: value.trim(), line, column });
+      continue;
+    }
+
+    // Handle Fragment Start <>
+    if (char === '<' && nextChar === '>') {
+      tokens.push({ type: 'FRAGMENT_START', line, column });
+      cursor += 2;
+      column += 2;
+      continue;
+    }
+
+    // Handle Fragment End </>
+    if (char === '<' && nextChar === '/' && input[cursor + 2] === '>') {
+      tokens.push({ type: 'FRAGMENT_END', line, column });
+      cursor += 3;
+      column += 3;
+      continue;
+    }
+
+    // Handle Self-Closing />
+    if (char === '/' && nextChar === '>') {
+      tokens.push({ type: 'SELF_CLOSE_TAG_END', line, column });
+      cursor += 2;
+      column += 2;
+      continue;
+    }
 
     if (char === '<') {
-      if (input[cursor + 1] === '/') {
-        tokens.push({ type: 'CLOSE_TAG_START', value: '</' });
+      if (nextChar === '/') {
+        tokens.push({ type: 'CLOSE_TAG_START', value: '</', line, column });
         cursor += 2;
+        column += 2;
       } else {
-        tokens.push({ type: 'OPEN_TAG_START', value: '<' });
+        tokens.push({ type: 'OPEN_TAG_START', value: '<', line, column });
         cursor += 1;
+        column += 1;
       }
       continue;
     }
 
     if (char === '>') {
-      tokens.push({ type: 'TAG_END', value: '>' });
+      tokens.push({ type: 'TAG_END', value: '>', line, column });
       cursor += 1;
+      column += 1;
       continue;
     }
 
     if (char === '=') {
-      tokens.push({ type: 'EQUALS', value: '=' });
+      tokens.push({ type: 'EQUALS', value: '=', line, column });
       cursor += 1;
+      column += 1;
       continue;
     }
 
     if (/\s/.test(char)) {
-      cursor += 1;
+      updatePos(char);
       continue;
     }
 
@@ -42,50 +119,54 @@ export function tokenize(input) {
       cursor += 1;
       while (cursor < input.length && input[cursor] !== quote) {
         value += input[cursor];
-        cursor += 1;
+        updatePos(input[cursor]);
       }
       cursor += 1;
-      tokens.push({ type: 'STRING', value });
+      tokens.push({ type: 'STRING', value, line, column });
       continue;
     }
 
-    // Match identifiers or text
-    const isInsideTag = tokens.length > 0 &&
-      (tokens[tokens.length - 1].type === 'OPEN_TAG_START' ||
-       tokens[tokens.length - 1].type === 'CLOSE_TAG_START' ||
-       tokens[tokens.length - 1].type === 'IDENTIFIER' ||
-       tokens[tokens.length - 1].type === 'EQUALS');
+    // Identify tokens based on context
+    const lastToken = tokens[tokens.length - 1];
+    const isInsideTag = lastToken && (
+      lastToken.type === 'OPEN_TAG_START' ||
+      lastToken.type === 'CLOSE_TAG_START' ||
+      lastToken.type === 'IDENTIFIER' ||
+      lastToken.type === 'EQUALS'
+    );
 
     if (isInsideTag) {
       let identifier = '';
-      while (cursor < input.length && /[a-zA-Z0-9-]/.test(input[cursor])) {
+      while (cursor < input.length && /[a-zA-Z0-9-:]/.test(input[cursor])) {
         identifier += input[cursor];
         cursor += 1;
+        column++;
       }
       if (identifier) {
-        tokens.push({ type: 'IDENTIFIER', value: identifier });
+        tokens.push({ type: 'IDENTIFIER', value: identifier, line, column });
         continue;
       }
     } else {
       let text = '';
-      while (cursor < input.length && input[cursor] !== '<') {
+      while (cursor < input.length && input[cursor] !== '<' && input[cursor] !== '{') {
         text += input[cursor];
-        cursor += 1;
+        updatePos(input[cursor]);
       }
       if (text.trim()) {
-        tokens.push({ type: 'TEXT', value: text.trim() });
+        tokens.push({ type: 'TEXT', value: text.trim(), line, column });
       }
       continue;
     }
 
     cursor++;
+    column++;
   }
 
   return tokens;
 }
 
 /**
- * Recursive Descent Parser for .mek AST
+ * Mekta Robust Recursive Descent Parser (v1.5 Architect Edition)
  */
 export function parse(tokens) {
   let current = 0;
@@ -93,16 +174,37 @@ export function parse(tokens) {
   function walk() {
     let token = tokens[current];
 
+    if (!token) return null;
+
+    if (token.type === 'COMMENT') {
+      current++;
+      return { type: 'CommentNode', value: token.value };
+    }
+
     if (token.type === 'TEXT') {
       current++;
-      return {
-        type: 'TextNode',
-        value: token.value,
-      };
+      return { type: 'TextNode', value: token.value };
+    }
+
+    if (token.type === 'EXPRESSION') {
+      current++;
+      return { type: 'ExpressionNode', value: token.value };
+    }
+
+    if (token.type === 'FRAGMENT_START') {
+      current++;
+      const node = { type: 'Fragment', children: [] };
+      while (current < tokens.length && tokens[current].type !== 'FRAGMENT_END') {
+        const child = walk();
+        if (child) node.children.push(child);
+      }
+      current++; // Skip </>
+      return node;
     }
 
     if (token.type === 'OPEN_TAG_START') {
-      token = tokens[++current]; // Skip <
+      token = tokens[++current]; // tag name
+      if (!token) throw new Error(`Expected tag name at line ${tokens[current-1].line}`);
 
       const node = {
         type: 'Element',
@@ -110,43 +212,53 @@ export function parse(tokens) {
         props: {},
         children: [],
       };
+      current++;
 
-      token = tokens[++current]; // Skip identifier
-
-      while (token.type !== 'TAG_END') {
+      // Parse Attributes
+      while (current < tokens.length &&
+             tokens[current].type !== 'TAG_END' &&
+             tokens[current].type !== 'SELF_CLOSE_TAG_END') {
+        token = tokens[current];
         if (token.type === 'IDENTIFIER') {
           const name = token.value;
-          token = tokens[++current]; // Skip identifier
-          if (token.type === 'EQUALS') {
-            token = tokens[++current]; // Skip =
-            node.props[name] = token.value;
-            token = tokens[++current]; // Skip string
+          current++;
+          if (tokens[current] && tokens[current].type === 'EQUALS') {
+            current++;
+            const valToken = tokens[current];
+            if (valToken.type === 'STRING' || valToken.type === 'EXPRESSION') {
+              node.props[name] = {
+                type: valToken.type === 'STRING' ? 'Literal' : 'Expression',
+                value: valToken.value
+              };
+              current++;
+            } else {
+              node.props[name] = { type: 'Literal', value: true };
+            }
           } else {
-            node.props[name] = true;
+            node.props[name] = { type: 'Literal', value: true };
           }
         } else {
           current++;
         }
-        token = tokens[current];
       }
 
-      current++; // Skip >
-
-      token = tokens[current];
-      while (
-        token &&
-        (token.type !== 'CLOSE_TAG_START')
-      ) {
-        node.children.push(walk());
-        token = tokens[current];
+      if (tokens[current] && tokens[current].type === 'SELF_CLOSE_TAG_END') {
+        current++;
+        return node;
       }
 
-      if (token && token.type === 'CLOSE_TAG_START') {
+      current++; // TAG_END
+
+      // Parse Children
+      while (current < tokens.length &&
+             tokens[current].type !== 'CLOSE_TAG_START' &&
+             tokens[current].type !== 'FRAGMENT_END') {
+        const child = walk();
+        if (child) node.children.push(child);
+      }
+
+      if (tokens[current] && tokens[current].type === 'CLOSE_TAG_START') {
         current++; // Skip </
-        token = tokens[current]; // tag name
-        if (token.value !== node.tag) {
-          throw new Error(`Expected closing tag for ${node.tag}, but found ${token.value}`);
-        }
         current++; // Skip tag name
         current++; // Skip >
       }
@@ -154,17 +266,18 @@ export function parse(tokens) {
       return node;
     }
 
-    throw new TypeError(`Unknown token type: ${token.type}`);
+    if (token.type === 'CLOSE_TAG_START' || token.type === 'FRAGMENT_END') {
+        return null; // Return to parent for handling
+    }
+
+    current++;
+    return null;
   }
 
-  const ast = {
-    type: 'Program',
-    body: [],
-  };
-
+  const ast = { type: 'Program', body: [] };
   while (current < tokens.length) {
-    ast.body.push(walk());
+    const node = walk();
+    if (node) ast.body.push(node);
   }
-
   return ast;
 }

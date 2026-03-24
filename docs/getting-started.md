@@ -1,0 +1,51 @@
+# Getting Started with Mekta
+
+Mekta is designed to be the ultimate target for **Agentic UI** and professional **FiveM** modding.
+
+## 1. Prerequisites
+
+- Node.js 18+
+- npm 9+
+
+## 2. Setting Up
+
+Install the dependencies:
+
+```bash
+npm install
+```
+
+## 3. Using the Dashboard
+
+Mekta's interactive dashboard is the best way to manage your project. Run it with:
+
+```bash
+node cli/index.js dashboard
+```
+
+Within the dashboard, you can:
+- **Switch Modes**: Agent, Architect, and Builder modes.
+- **Generate Projects**: Select a preset like `Standard Web` or `FiveM UI`.
+- **Install Addons**: Add GSAP animations or Next.js integration.
+
+## 4. Building Your First .mek File
+
+Create a file named `hello.mek`:
+
+```xml
+<page>
+  <text>Hello from Mekta!</text>
+</page>
+```
+
+Compile it to React-compatible JavaScript:
+
+```bash
+node cli/index.js build hello.mek
+```
+
+This will produce `hello.js`, which can be rendered by any React environment or Mekta's built-in SSR server.
+
+---
+
+[Back to Home](../README.md)
