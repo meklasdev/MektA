@@ -1,6 +1,17 @@
 # 🌌 Mekta Framework (v1.6.0-Architect)
 
-**High-Fidelity Virtual UI for the Next Generation of Builders**
+<div align="center">
+  <img src="mekta-logo.svg" width="220" alt="Mekta Logo" />
+  <p><strong>High-Fidelity Virtual UI for the Next Generation of Builders</strong></p>
+
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blueviolet.svg)](https://opensource.org/licenses/MIT)
+  [![Version](https://img.shields.io/badge/Version-1.6.0-indigo.svg)]()
+  [![Framework](https://img.shields.io/badge/Framework-React--Compatible-blue.svg)]()
+</div>
+
+---
+
+## ⚡ Overview
 
 Mekta is a production-grade frontend framework designed for **Industrial Architecture**, **Game UI Resources**, and **Next-Gen Web Ecosystems**. It introduces the `.mek` DSL—a JSX-like syntax that compiles into optimized React-compatible JavaScript, Static HTML, or PHP.
 
@@ -12,7 +23,7 @@ Mekta is a production-grade frontend framework designed for **Industrial Archite
 - **Architect Core Dashboard:** A professional slate-themed TUI dashboard for real-time project management, monitoring, and hot-reload.
 - **Next.js Plus Routing:** Recursive file-system based routing with support for nested layouts (`layout.mek`), dynamic parameters (`[id]`), and automatic children injection.
 - **Agent-Ready Architecture:** Designed specifically as a standardized target for AI-driven development and programmatic UI generation.
-- **Stable Toolchain:** Built on industry-standard foundations: Ink 5, Express 4, and React 19.
+- **Stable Toolchain:** Built on industry-standard foundations: Ink 5, Express 4, and React 18.3.1.
 
 ---
 
