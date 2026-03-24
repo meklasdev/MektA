@@ -26,11 +26,12 @@ jobs:
           cache: 'npm'
       - run: npm install
       - name: Build Web Page
-        run: node -e "import { compile } from './core/compiler.js'; import fs from 'fs'; const { js } = compile(fs.readFileSync('website/index.mek', 'utf8'), { target: 'html' }); fs.writeFileSync('website/index.html', js);"
+        run: |
+          node -e "import { compile } from './core/compiler.js'; import fs from 'fs'; const { js } = compile(fs.readFileSync('website/index.mek', 'utf8'), { target: 'html' }); fs.writeFileSync('website/index.html', js);"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './website'
+          path: 'website/'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
