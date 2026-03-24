@@ -1,0 +1,17 @@
+name: Mekta CI
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm install
+      - name: Validate Compiler
+        run: node -e "import { compile } from './core/compiler.js'; compile('<page><text>CI Check</text></page>')"
+      - name: Build Templates
+        run: node cli/index.js clone dashboard
