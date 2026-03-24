@@ -1,7 +1,7 @@
 name: Mekta Pages Deploy
 on:
   push:
-    branches: ["main", "mekta-framework-v1.6-final-stable"]
+    branches: ["main"]
   workflow_dispatch:
 permissions:
   contents: read
