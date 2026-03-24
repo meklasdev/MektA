@@ -1,4 +1,4 @@
-<html><body style="background:#050508;color:#e5e7eb;font-family:sans-serif;padding:50px;"><pre># Mekta Routing System
+<div><div class="sidebar"><a href="../index.html" style="text-decoration: none;"><p style="font-size: 22px; font-weight: 900; color: #8b5cf6; letter-spacing: -1px;">MEKTA<span style="color: #fff;">DOCS</span></p></a><nav style="margin-top: 20px;"><a href="./getting-started.html" class="nav-item">Getting Started</a><a href="./routing.html" class="nav-item">Architecture & Routing</a><a href="./syntax.html" class="nav-item">DSL Syntax Guide</a><a href="./addons.html" class="nav-item">Addon System</a><a href="./plugins.html" class="nav-item">Plugins API</a></nav></div><div class="content"><a href="../index.html" class="btn-back">← Back to Base</a><div id="doc-container"><h1>ROUTING</h1><pre># Mekta Routing System
 
 Mekta implements a file-system based routing system inspired by Next.js.
 
@@ -16,16 +16,11 @@ Your pages should be placed in the `pages/` directory at the root of your projec
 File names with square brackets like `[id].mek` denote dynamic routes. The value captured by the route is injected into your `.mek` component as a variable.
 
 **Example: `pages/posts/[id].mek`**
-```mek
-<page>
-  <text>Post ID: {id}</text>
-</page>
-```
+```mek<div><p>Post ID:{{ id }}</p></div>```
 
 ## Route Resolution
 
 The Mekta server automatically resolves these paths:
 1. Exact match (`/about` -> `pages/about.mek`)
 2. Directory index (`/docs` -> `pages/docs/index.mek`)
-3. Dynamic match (`/posts/123` -> `pages/posts/[id].mek` with `{id: '123'}`)
-</pre></body></html>
+3. Dynamic match (`/posts/123` -> `pages/posts/[id].mek` with `{{ id: '123' }}`)</pre></div></div></div>
