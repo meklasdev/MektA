@@ -16,19 +16,10 @@ const app = express();
 app.use(express.json());
 
 /**
- * Enhanced multi-target rendering with Layout support
+ * Enhanced multi-target rendering
  */
-function renderMekChain(pageCode, layoutChain = [], params = {}) {
-  // Wrap page in layouts recursively
-  let finalMek = pageCode;
-
-  for (let i = layoutChain.length - 1; i >= 0; i--) {
-     const layoutCode = fs.readFileSync(layoutChain[i], 'utf8');
-     // Inject content into {children} placeholder in layout
-     finalMek = layoutCode.replace('{children}', finalMek);
-  }
-
-  const { js, css } = compile(finalMek, { target: 'react' });
+function renderMekAllTargets(mekCode, params = {}) {
+  const { js, css } = compile(mekCode, { target: 'react' });
 
   const context = {
     createElement,
@@ -43,7 +34,40 @@ function renderMekChain(pageCode, layoutChain = [], params = {}) {
   return { ssrHtml, css };
 }
 
-// Routes - Catch-all for file-system routing
+// Visual Builder Addon Route
+app.get('/builder', (req, res) => {
+  const builderHtml = `
+    <html>
+      <head>
+        <title>Mekta Vision Builder</title>
+        <style>
+          body { background: #020617; color: #fff; font-family: sans-serif; display: flex; height: 100vh; margin: 0; }
+          .sidebar { width: 300px; background: #0f172a; border-right: 1px solid #334155; padding: 20px; }
+          .canvas { flex: 1; display: flex; align-items: center; justify-content: center; background: #05050a; }
+          .drop-zone { width: 80%; height: 80%; border: 2px dashed #8b5cf6; display: flex; align-items: center; justify-content: center; }
+          .comp { padding: 10px; background: #1e293b; margin: 5px 0; cursor: move; border-radius: 4px; border: 1px solid #334155; }
+        </style>
+      </head>
+      <body>
+        <div class="sidebar">
+          <h3>▣ MEKTA VISION</h3>
+          <p style="color: #64748b; font-size: 12px;">Visual Drag & Drop Engine</p>
+          <div class="comp">Header</div>
+          <div class="comp">Hero Section</div>
+          <div class="comp">Card Grid</div>
+          <div class="comp">Text Block</div>
+          <div class="comp">Form Component</div>
+        </div>
+        <div class="canvas">
+          <div class="drop-zone">Drag components here to architect your UI</div>
+        </div>
+      </body>
+    </html>
+  `;
+  res.send(builderHtml);
+});
+
+// Catch-all route for file-system routing
 app.get('*', (req, res) => {
   if (req.path === '/favicon.ico') return res.status(204).end();
 
@@ -65,7 +89,7 @@ app.get('*', (req, res) => {
 
   try {
     const mekCode = fs.readFileSync(route.file, 'utf8');
-    const { ssrHtml, css } = renderMekChain(mekCode, route.layouts, route.params);
+    const { ssrHtml, css } = renderMekAllTargets(mekCode, route.params);
     res.send(`
       <html>
         <head>

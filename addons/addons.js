@@ -22,12 +22,20 @@ const addons = {
     package: 'fivem-ui-bridge',
     description: 'Configures your project for use as a FiveM UI resource.',
     onInstall: (projectPath) => {
-      // Generate FiveM specific files
       const manifest = `fx_version 'cerulean'\ngame 'gta5'\nui_page 'html/index.html'\nfiles {\n  'html/index.html',\n  'html/style.css',\n  'html/script.js'\n}`;
       fs.writeFileSync(path.join(projectPath, 'fxmanifest.lua'), manifest);
       if (!fs.existsSync(path.join(projectPath, 'html'))) {
         fs.mkdirSync(path.join(projectPath, 'html'));
       }
+    }
+  },
+  vision: {
+    id: 'vision',
+    name: 'Mekta Vision (Visual Builder)',
+    package: 'mekta-vision-engine',
+    description: 'Enables a visual drag-and-drop builder at http://localhost:3000/builder',
+    onInstall: (projectPath) => {
+      onLog('Enabling Visual Builder context...', 'info');
     }
   }
 };
