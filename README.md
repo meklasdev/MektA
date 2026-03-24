@@ -1,7 +1,7 @@
 # 🌌 Mekta Framework (v1.6.0-Architect)
 
 <div align="center">
-  <img src="mekta-logo.svg" width="220" alt="Mekta Logo" />
+  <img src="mekta-banner.svg" width="800" alt="Mekta Banner" />
   <p><strong>High-Fidelity Virtual UI for the Next Generation of Builders</strong></p>
 
   [![License: MIT](https://img.shields.io/badge/License-MIT-blueviolet.svg)](https://opensource.org/licenses/MIT)
