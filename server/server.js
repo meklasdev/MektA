@@ -4,6 +4,10 @@ import { compile } from '../core/compiler.js';
 import { createElement } from '../runtime/runtime.js';
 import { getTemplate } from '../templates/templates.js';
 import { resolveRoute } from '../core/router.js';
+import { UI } from '../core/lib/ui.js';
+import { Auth } from '../core/lib/auth.js';
+import { DB } from '../core/lib/db.js';
+import { Utils } from '../core/lib/utils.js';
 import vm from 'vm';
 import chalk from 'chalk';
 import fs from 'fs';
@@ -20,7 +24,12 @@ function renderMekAllTargets(mekCode, params = {}) {
   const html = compile(mekCode, { target: 'html' });
   const php = compile(mekCode, { target: 'php' });
 
-  const context = { createElement, React: { createElement }, ...params };
+  const context = {
+    createElement,
+    React: { createElement },
+    ...params,
+    UI, Auth, DB, Utils
+  };
   vm.createContext(context);
   const element = vm.runInContext(js, context);
   const ssrHtml = renderToString(element);
@@ -41,16 +50,20 @@ app.get('*', (req, res) => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Mekta Framework - ${req.path}</title>
+          <title>Mekta Architect - ${req.path}</title>
           <style>
-            body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; margin: 0; padding: 40px; }
-            #root { background: #1a1a1a; padding: 40px; border-radius: 12px; border: 1px solid #8A2BE2; min-height: 200px; }
+            body { font-family: 'Inter', 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; margin: 0; padding: 40px; }
+            #root { background: #111; padding: 40px; border-radius: 12px; border: 1px solid #8A2BE2; min-height: 200px; }
             ${css}
+            .system-info { margin-top: 50px; color: #555; font-size: 0.8rem; font-family: monospace; }
           </style>
         </head>
         <body>
           <div id="root">${ssrHtml}</div>
-          <div style="margin-top: 50px; color: #555;">Route: ${route.file} | Params: ${JSON.stringify(route.params)}</div>
+          <div class="system-info">
+            Route: ${route.file} | Params: ${JSON.stringify(route.params)}<br/>
+            Framework: Mekta V1.2.0 (Architect Edition)
+          </div>
         </body>
       </html>
     `);
@@ -61,5 +74,5 @@ app.get('*', (req, res) => {
 
 const PORT = 3000;
 app.listen(PORT, () => {
-  console.log(chalk.magenta(`Mekta server running at http://localhost:${PORT}`));
+  console.log(chalk.magenta(`Mekta Architect server running at http://localhost:${PORT}`));
 });
