@@ -13,7 +13,6 @@ export function generate(node, target = 'react') {
 
 /**
  * React Backend (v1.5)
- * Supports Fragments, Directives, and Event Mapping.
  */
 function generateReact(node) {
   switch (node.type) {
@@ -29,32 +28,41 @@ function generateReact(node) {
 
       // Directives
       if (props['m-if']) {
-        const cond = props['m-if']; delete props['m-if'];
-        return `(${cond}) ? ${generateReact({ ...node, props })} : null`;
+        const cond = props['m-if'].value; delete props['m-if'];
+        const inner = generateReact({ ...node, props });
+        return `(${cond}) ? ${inner} : null`;
       }
       if (props['m-for']) {
-        const [item, list] = props['m-for'].split(' in ').map(s => s.trim());
+        const [item, list] = props['m-for'].value.split(' in ').map(s => s.trim());
         delete props['m-for'];
-        return `(${list}).map((${item}) => ${generateReact({ ...node, props })})`;
+        const inner = generateReact({ ...node, props });
+        return `(${list}).map((${item}) => ${inner})`;
       }
 
-      // Prop Mapping
-      const mappedProps = Object.keys(props).length > 0
-        ? JSON.stringify(props).replace(/"([^"]+)":/g, '$1:')
-            .replace(/class:/g, 'className:')
-            .replace(/for:/g, 'htmlFor:')
-            .replace(/tabindex:/g, 'tabIndex:')
-            .replace(/on([a-z]+):/g, (m, p) => `on${p.charAt(0).toUpperCase() + p.slice(1)}:`)
-        : 'null';
+      // Safe Prop Mapping
+      const mappedPropEntries = Object.entries(props).map(([key, attr]) => {
+        let mappedKey = key;
+        if (key === 'class') mappedKey = 'className';
+        if (key === 'for') mappedKey = 'htmlFor';
+        if (key === 'tabindex') mappedKey = 'tabIndex';
+        if (key.startsWith('on')) {
+           const event = key.charAt(2).toUpperCase() + key.slice(3);
+           mappedKey = `on${event}`;
+        }
 
+        const val = attr.type === 'Expression' ? attr.value : JSON.stringify(attr.value);
+        return `${mappedKey}: ${val}`;
+      });
+
+      const propsObj = mappedPropEntries.length > 0 ? `{ ${mappedPropEntries.join(', ')} }` : 'null';
       const children = node.children.map(generateReact).filter(Boolean).join(', ');
-      return `createElement("${node.tag}", ${mappedProps}${children ? `, ${children}` : ''})`;
+      return `createElement("${node.tag}", ${propsObj}${children ? `, ${children}` : ''})`;
 
     case 'TextNode':
-      // Handle template literals ${...} in text nodes
-      const text = node.value.replace(/`/g, '\\`');
-      if (text.includes('${')) return `\`${text}\``;
-      return `"${text.replace(/"/g, '\\"')}"`;
+      return `"${node.value.replace(/"/g, '\\"')}"`;
+
+    case 'ExpressionNode':
+      return node.value;
 
     case 'CommentNode':
       return `/* ${node.value} */`;
@@ -74,10 +82,11 @@ function generateHTML(node) {
     case 'Element':
       const props = Object.entries(node.props)
         .filter(([k]) => !k.startsWith('m-'))
-        .map(([k, v]) => ` ${k}="${v}"`).join('');
+        .map(([k, v]) => ` ${k}="${v.value}"`).join('');
       const children = node.children.map(generateHTML).join('');
       return `<${node.tag}${props}>${children}</${node.tag}>`;
     case 'TextNode': return node.value;
+    case 'ExpressionNode': return `{{ ${node.value} }}`;
     case 'CommentNode': return `<!-- ${node.value} -->`;
     default: return '';
   }

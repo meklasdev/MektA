@@ -1,6 +1,6 @@
 /**
- * Mekta Robust Tokenizer (v1.4)
- * Supports line/column tracking, fragments, and comments.
+ * Mekta Robust Tokenizer (v1.5 Architect Edition)
+ * Supports line/column tracking, fragments, comments, and expressions.
  */
 export function tokenize(input) {
   const tokens = [];
@@ -10,10 +10,8 @@ export function tokenize(input) {
 
   while (cursor < input.length) {
     let char = input[cursor];
-
     const nextChar = input[cursor + 1];
 
-    // Track Line/Column
     const updatePos = (str) => {
       for (const c of str) {
         if (c === '\n') {
@@ -25,6 +23,26 @@ export function tokenize(input) {
       }
       cursor += str.length;
     };
+
+    // Handle Expressions { ... }
+    if (char === '{') {
+      let value = '';
+      let braceCount = 1;
+      cursor++;
+      column++;
+      while (cursor < input.length && braceCount > 0) {
+        if (input[cursor] === '{') braceCount++;
+        if (input[cursor] === '}') braceCount--;
+        if (braceCount > 0) {
+          value += input[cursor];
+          updatePos(input[cursor]);
+        }
+      }
+      cursor++;
+      column++;
+      tokens.push({ type: 'EXPRESSION', value: value.trim(), line, column });
+      continue;
+    }
 
     // Handle Comments <!-- -->
     if (char === '<' && input.slice(cursor, cursor + 4) === '<!--') {
@@ -130,7 +148,7 @@ export function tokenize(input) {
       }
     } else {
       let text = '';
-      while (cursor < input.length && input[cursor] !== '<') {
+      while (cursor < input.length && input[cursor] !== '<' && input[cursor] !== '{') {
         text += input[cursor];
         updatePos(input[cursor]);
       }
@@ -148,7 +166,7 @@ export function tokenize(input) {
 }
 
 /**
- * Mekta Robust Recursive Descent Parser (v1.4)
+ * Mekta Robust Recursive Descent Parser (v1.5 Architect Edition)
  */
 export function parse(tokens) {
   let current = 0;
@@ -166,6 +184,11 @@ export function parse(tokens) {
     if (token.type === 'TEXT') {
       current++;
       return { type: 'TextNode', value: token.value };
+    }
+
+    if (token.type === 'EXPRESSION') {
+      current++;
+      return { type: 'ExpressionNode', value: token.value };
     }
 
     if (token.type === 'FRAGMENT_START') {
@@ -201,10 +224,18 @@ export function parse(tokens) {
           current++;
           if (tokens[current] && tokens[current].type === 'EQUALS') {
             current++;
-            node.props[name] = tokens[current].value;
-            current++;
+            const valToken = tokens[current];
+            if (valToken.type === 'STRING' || valToken.type === 'EXPRESSION') {
+              node.props[name] = {
+                type: valToken.type === 'STRING' ? 'Literal' : 'Expression',
+                value: valToken.value
+              };
+              current++;
+            } else {
+              node.props[name] = { type: 'Literal', value: true };
+            }
           } else {
-            node.props[name] = true;
+            node.props[name] = { type: 'Literal', value: true };
           }
         } else {
           current++;
@@ -219,7 +250,9 @@ export function parse(tokens) {
       current++; // TAG_END
 
       // Parse Children
-      while (current < tokens.length && tokens[current].type !== 'CLOSE_TAG_START') {
+      while (current < tokens.length &&
+             tokens[current].type !== 'CLOSE_TAG_START' &&
+             tokens[current].type !== 'FRAGMENT_END') {
         const child = walk();
         if (child) node.children.push(child);
       }
@@ -233,7 +266,7 @@ export function parse(tokens) {
       return node;
     }
 
-    if (token.type === 'CLOSE_TAG_START') {
+    if (token.type === 'CLOSE_TAG_START' || token.type === 'FRAGMENT_END') {
         return null; // Return to parent for handling
     }
 

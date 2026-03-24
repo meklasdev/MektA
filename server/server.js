@@ -2,12 +2,11 @@ import express from 'express';
 import { renderToString } from 'react-dom/server';
 import { compile } from '../core/compiler.js';
 import { createElement } from '../runtime/runtime.js';
-import { getTemplate } from '../templates/templates.js';
-import { resolveRoute } from '../core/router.js';
 import { UI } from '../core/lib/ui.js';
 import { Auth } from '../core/lib/auth.js';
 import { DB } from '../core/lib/db.js';
 import { Utils } from '../core/lib/utils.js';
+import { resolveRoute } from '../core/router.js';
 import vm from 'vm';
 import chalk from 'chalk';
 import fs from 'fs';
@@ -21,8 +20,6 @@ app.use(express.json());
  */
 function renderMekAllTargets(mekCode, params = {}) {
   const { js, css } = compile(mekCode, { target: 'react' });
-  const html = compile(mekCode, { target: 'html' });
-  const php = compile(mekCode, { target: 'php' });
 
   const context = {
     createElement,
@@ -34,45 +31,52 @@ function renderMekAllTargets(mekCode, params = {}) {
   const element = vm.runInContext(js, context);
   const ssrHtml = renderToString(element);
 
-  return { ssrHtml, react: js, html: html.js, php: php.js, css };
+  return { ssrHtml, css };
 }
 
-// Routes
+// Catch-all route for file-system routing
 app.get('*', (req, res) => {
+  // Ignore favicon.ico
+  if (req.path === '/favicon.ico') return res.status(204).end();
+
   const route = resolveRoute(req.path);
-  if (!route) return res.status(404).send('404: Not Found');
-
-  try {
-    const mekCode = fs.readFileSync(route.file, 'utf8');
-    const { ssrHtml, css } = renderMekAllTargets(mekCode, route.params);
-
-    res.send(`
-      <!DOCTYPE html>
+  if (!route) {
+    return res.status(404).send(`
       <html>
-        <head>
-          <title>Mekta Architect - ${req.path}</title>
-          <style>
-            body { font-family: 'Inter', 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; margin: 0; padding: 40px; }
-            #root { background: #111; padding: 40px; border-radius: 12px; border: 1px solid #8A2BE2; min-height: 200px; }
-            ${css}
-            .system-info { margin-top: 50px; color: #555; font-size: 0.8rem; font-family: monospace; }
-          </style>
-        </head>
-        <body>
-          <div id="root">${ssrHtml}</div>
-          <div class="system-info">
-            Route: ${route.file} | Params: ${JSON.stringify(route.params)}<br/>
-            Framework: Mekta V1.2.0 (Architect Edition)
+        <head><title>404 - Not Found</title></head>
+        <body style="font-family: sans-serif; background: #0a0a0a; color: #fff; display: flex; align-items: center; justify-content: center; height: 100vh;">
+          <div style="text-align: center;">
+            <h1 style="color: #ff00ff;">404</h1>
+            <p>Page not found: ${req.path}</p>
+            <a href="/" style="color: #00ffff;">Back Home</a>
           </div>
         </body>
       </html>
     `);
+  }
+
+  try {
+    const mekCode = fs.readFileSync(route.file, 'utf8');
+    const { ssrHtml, css } = renderMekAllTargets(mekCode, route.params);
+    res.send(`
+      <html>
+        <head>
+          <title>Mekta App</title>
+          <style>${css}</style>
+          <style>body { margin: 0; background: #0a0a0a; color: #fff; font-family: sans-serif; }</style>
+        </head>
+        <body>
+          <div id="root">${ssrHtml}</div>
+        </body>
+      </html>
+    `);
   } catch (err) {
-    res.status(500).send({ error: err.message });
+    console.error(chalk.red(`Error rendering ${req.path}:`), err);
+    res.status(500).send(`<pre>${err.stack}</pre>`);
   }
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(chalk.magenta(`Mekta Architect server running at http://localhost:${PORT}`));
 });

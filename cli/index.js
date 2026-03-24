@@ -10,6 +10,7 @@ import fs from 'fs';
 import path from 'path';
 import { compile } from '../core/compiler.js';
 import { getTemplate } from '../templates/templates.js';
+import { listAddons, installAddon } from '../addons/addons.js';
 import { spawn } from 'child_process';
 import chokidar from 'chokidar';
 import chalk from 'chalk';
@@ -112,6 +113,27 @@ program
   });
 
 /**
+ * Addons Command
+ */
+program
+  .command('addons')
+  .description('Manage Mekta addons (GSAP, FiveM, etc.)')
+  .argument('[id]', 'Addon ID to install')
+  .option('-l, --list', 'List all available addons')
+  .action((id, options) => {
+    if (options.list || !id) {
+      console.log(chalk.magenta('\n◆ Available Mekta Addons:'));
+      listAddons().forEach(a => console.log(chalk.cyan(`  - ${a.id}:`), chalk.gray(a.description)));
+      return;
+    }
+
+    const success = installAddon(id, process.cwd());
+    if (success) {
+      console.log(chalk.green(`✔ Addon '${id}' installed successfully!`));
+    }
+  });
+
+/**
  * Dev Server Command
  */
 program
@@ -119,12 +141,18 @@ program
   .description('Start dev server with Hot Reload')
   .action(() => {
     console.log(chalk.magenta('◆ Initializing Hot Reload server...'));
-    const server = spawn('node', ['server/server.js'], { stdio: 'inherit' });
+
+    let server;
+    const startServer = () => {
+      if (server) server.kill();
+      server = spawn('node', ['server/server.js'], { stdio: 'inherit' });
+    };
+
+    startServer();
 
     chokidar.watch(['core/**/*.js', 'server/**/*.js', 'pages/**/*.mek']).on('change', (p) => {
       console.log(chalk.yellow(`\n♻ File ${p} changed. Re-architecting...`));
-      server.kill();
-      process.exit(0);
+      startServer();
     });
   });
 
