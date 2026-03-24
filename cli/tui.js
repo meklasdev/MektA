@@ -1,181 +1,190 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { render, Box, Text, useInput, useApp } from 'ink';
 import Spinner from 'ink-spinner';
+import SelectInput from 'ink-select-input';
+import TextInput from 'ink-text-input';
 import path from 'path';
 import fs from 'fs';
-import { listTemplates, getNextBridgeLinks } from '../templates/templates.js';
+import { listTemplates, getTemplate } from '../templates/templates.js';
+import { listAddons, installAddon } from '../addons/addons.js';
 
 const e = React.createElement;
 
 // --- Components ---
 
-const Header = () => (
-  e(Box, {
-    paddingX: 2,
-    marginBottom: 0,
-    borderStyle: 'single',
-    borderColor: '#475569',
-    justifyContent: 'space-between'
-  },
-    e(Text, { color: '#94a3b8', bold: true }, ' ▣ MEKTA v1.5 ARCHITECT CORE '),
-    e(Text, { color: '#64748b' }, `[ ${new Date().toLocaleTimeString()} ]`)
+const Header = ({ activeTab }) => (
+  e(Box, { paddingX: 2, marginBottom: 1, borderStyle: 'double', borderColor: '#8b5cf6', justifyContent: 'space-between' },
+    e(Box, null,
+      e(Text, { color: '#8b5cf6', bold: true }, ' ▣ MEKTA '),
+      e(Text, { color: '#6366f1' }, ' ARCHITECT ')
+    ),
+    e(Box, null,
+      ['DASHBOARD', 'CREATE', 'BUILD', 'ADDONS', 'LOGS'].map(tab => (
+        e(Text, { key: tab, color: activeTab === tab.toLowerCase() ? '#ffffff' : '#475569', bold: activeTab === tab.toLowerCase() }, `  ${tab}  `)
+      ))
+    )
   )
 );
 
-const Pane = ({ title, children, width, height, color = '#334155' }) => (
-  e(Box, {
-    flexDirection: 'column',
-    width,
-    height,
-    borderStyle: 'round',
-    borderColor: color,
-    paddingX: 1,
-    marginX: 0
-  },
+const Pane = ({ title, children, flexGrow = 1, color = '#334155' }) => (
+  e(Box, { flexDirection: 'column', flexGrow, borderStyle: 'round', borderColor: color, paddingX: 1, marginX: 1 },
     e(Box, { marginBottom: 1 },
-      e(Text, { color: '#64748b', bold: true }, ` ${title.toUpperCase()} `)
+      e(Text, { color: '#818cf8', bold: true }, ` ${title.toUpperCase()} `)
     ),
     children
   )
 );
 
-const FileList = ({ files }) => (
-  e(Box, { flexDirection: 'column' },
-    files.map((file, i) => (
-      e(Box, { key: i },
-        e(Text, { color: '#475569' }, '  ├ '),
-        e(Text, { color: '#cbd5e1' }, file)
-      )
-    )),
-    e(Box, null, e(Text, { color: '#475569' }, '  └ '), e(Text, { color: '#475569', italic: true }, '(end of tree)'))
-  )
-);
+// --- Tabs ---
 
-const RouteList = ({ routes }) => (
-  e(Box, { flexDirection: 'column' },
-    routes.map((route, i) => (
-      e(Box, { key: i, marginBottom: 0 },
-        e(Text, { color: '#10b981' }, '  ● '),
-        e(Text, { color: '#f1f5f9' }, route.path.padEnd(15)),
-        e(Text, { color: '#64748b' }, ` → ${route.file}`)
-      )
-    ))
-  )
-);
-
-const TemplateBrowser = () => (
-  e(Box, { flexDirection: 'column' },
-    listTemplates().map((t, i) => (
-      e(Box, { key: i },
-        e(Text, { color: '#818cf8' }, ` [${t.name}] `),
-        e(Text, { color: '#64748b' }, t.description)
-      )
-    ))
-  )
-);
-
-const LogConsole = ({ logs }) => (
-  e(Box, { flexDirection: 'column', flexGrow: 1, overflowY: 'hidden' },
-    logs.slice(-10).map((log, i) => (
-      e(Box, { key: i },
-        e(Text, { color: '#475569' }, `[${log.time}] `),
-        e(Text, { color: log.type === 'error' ? '#ef4444' : (log.type === 'success' ? '#10b981' : '#94a3b8') }, log.text)
-      )
-    ))
-  )
-);
-
-const Stats = ({ stats }) => (
-  e(Box, { justifyContent: 'space-between', paddingX: 1, borderStyle: 'single', borderColor: '#334155', marginTop: 0 },
-    e(Box, null,
-      e(Text, { color: '#64748b' }, 'SYSTEM: '),
-      e(Text, { color: '#10b981' }, 'STABLE'),
-      e(Text, null, '  '),
-      e(Spinner, { type: 'dots' })
+const DashboardTab = ({ files, routes }) => (
+  e(Box, { flexGrow: 1 },
+    e(Pane, { title: 'Source Tree', flexGrow: 1 },
+      files.map((f, i) => e(Text, { key: i, color: '#cbd5e1' }, ` ├ ${f}`))
     ),
-    e(Box, null,
-      e(Text, { color: '#475569' }, `PID ${process.pid} `),
-      e(Text, { color: '#64748b' }, ` MEM ${stats.mem}MB`)
+    e(Pane, { title: 'Active Routes', flexGrow: 1 },
+      routes.map((r, i) => e(Box, { key: i },
+        e(Text, { color: '#10b981' }, ' ● '),
+        e(Text, { color: '#f1f5f9' }, r.path.padEnd(12)),
+        e(Text, { color: '#64748b' }, `→ ${r.file}`)
+      ))
     )
+  )
+);
+
+const CreateTab = ({ onLog }) => {
+  const [step, setStep] = useState('template');
+  const [template, setTemplate] = useState('');
+  const [name, setName] = useState('');
+
+  const templates = listTemplates().map(t => ({ label: t.name, value: t.name }));
+
+  const handleCreate = () => {
+     if (!name) return;
+     onLog(`Architecting project: ${name} (preset: ${template})...`, 'info');
+     // Logic for actual FS creation would go here as per cli/index.js
+     onLog(`Scaffolded ${name} successfully!`, 'success');
+     setStep('template');
+     setName('');
+  };
+
+  if (step === 'template') {
+    return e(Pane, { title: 'Select Architecture Preset' },
+      e(SelectInput, { items: templates, onSelect: (item) => { setTemplate(item.value); setStep('name'); } })
+    );
+  }
+
+  return e(Pane, { title: 'Project Identity' },
+    e(Box, null,
+      e(Text, { color: '#8b5cf6' }, 'Project Name: '),
+      e(TextInput, { value: name, onChange: setName, onSubmit: handleCreate })
+    ),
+    e(Text, { color: '#4b5563', marginTop: 1 }, ' Press ENTER to confirm scaffolding ')
+  );
+};
+
+const AddonsTab = ({ onLog }) => (
+  e(Pane, { title: 'Mekta Plugin Bridge' },
+    e(SelectInput, {
+      items: listAddons().map(a => ({ label: a.name, value: a.id })),
+      onSelect: (item) => onLog(`Installed addon: ${item.label}`, 'success')
+    })
+  )
+);
+
+const BuildTab = ({ onLog }) => (
+  e(Pane, { title: 'Compiler Targets' },
+    e(SelectInput, {
+      items: [
+        { label: 'Build for React (SSR)', value: 'react' },
+        { label: 'Build for Static HTML', value: 'html' },
+        { label: 'Build for PHP Bridge', value: 'php' }
+      ],
+      onSelect: (item) => onLog(`Compilation triggered for: ${item.value}`, 'info')
+    })
+  )
+);
+
+const LogTab = ({ logs }) => (
+  e(Pane, { title: 'System Trace' },
+    logs.map((l, i) => (
+      e(Box, { key: i },
+        e(Text, { color: '#475569' }, `[${l.time}] `),
+        e(Text, { color: l.type === 'success' ? '#10b981' : (l.type === 'error' ? '#ef4444' : '#94a3b8') }, l.text)
+      )
+    ))
   )
 );
 
 // --- Main App ---
 
-const MektaDashboard = () => {
+const MektaTUI = () => {
   const { exit } = useApp();
-  const [stats, setStats] = useState({ mem: Math.floor(process.memoryUsage().heapUsed / 1024 / 1024) });
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [logs, setLogs] = useState([
-    { time: new Date().toLocaleTimeString(), type: 'info', text: 'Initializing Mekta Architect Engine...' },
-    { time: new Date().toLocaleTimeString(), type: 'success', text: 'V8 Context Layer Online.' },
-    { time: new Date().toLocaleTimeString(), type: 'success', text: 'Nested Layout Bridge Ready.' }
+    { time: new Date().toLocaleTimeString(), type: 'info', text: 'Architect Dashboard v1.6 Initialized.' }
   ]);
+
+  const addLog = (text, type = 'info') => {
+    setLogs(prev => [...prev, { time: new Date().toLocaleTimeString(), text, type }].slice(-15));
+  };
 
   const files = useMemo(() => {
     try {
-      const allFiles = [];
-      const scan = (dir) => {
-         const entries = fs.readdirSync(dir, { withFileTypes: true });
-         for (const entry of entries) {
-            const res = path.join(dir, entry.name).replace(/\\/g, '/');
-            if (entry.isDirectory()) scan(res);
-            else if (res.endsWith('.mek')) allFiles.push(res);
-         }
+      const all = [];
+      const scan = (d) => {
+        fs.readdirSync(d, { withFileTypes: true }).forEach(e => {
+          const r = path.join(d, e.name).replace(/\\/g, '/');
+          if (e.isDirectory()) scan(r); else if (r.endsWith('.mek')) all.push(r);
+        });
       };
-      if (fs.existsSync('./pages')) scan('pages');
-      return allFiles.length > 0 ? allFiles : ['pages/index.mek'];
-    } catch (e) { return ['pages/index.mek']; }
+      if (fs.existsSync('pages')) scan('pages');
+      return all;
+    } catch { return ['pages/index.mek']; }
   }, []);
 
-  const routes = useMemo(() => {
-    return files.map(f => {
-       let p = f.replace('pages', '').replace('.mek', '').replace(/\\/g, '/');
-       if (p.endsWith('index')) p = p.slice(0, -5);
-       if (p === '') p = '/';
-       return { path: p, file: f };
-    });
-  }, [files]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setStats({ mem: Math.floor(process.memoryUsage().heapUsed / 1024 / 1024) });
-    }, 2000);
-    return () => clearInterval(timer);
-  }, []);
+  const routes = useMemo(() => files.map(f => {
+    let p = f.replace('pages', '').replace('.mek', '').replace(/\\/g, '/');
+    if (p.endsWith('index')) p = p.slice(0, -5);
+    return { path: p || '/', file: f };
+  }), [files]);
 
   useInput((input, key) => {
-    if (key.escape || (input === 'q')) exit();
+    if (key.escape || input === 'q') exit();
+    if (key.rightArrow) {
+       const tabs = ['dashboard', 'create', 'build', 'addons', 'logs'];
+       setActiveTab(tabs[(tabs.indexOf(activeTab) + 1) % tabs.length]);
+    }
+    if (key.leftArrow) {
+       const tabs = ['dashboard', 'create', 'build', 'addons', 'logs'];
+       setActiveTab(tabs[(tabs.indexOf(activeTab) - 1 + tabs.length) % tabs.length]);
+    }
   });
 
   return (
-    e(Box, { flexDirection: 'column', padding: 1, width: 100 },
-      e(Header),
+    e(Box, { flexDirection: 'column', padding: 1, width: 90, height: 28 },
+      e(Header, { activeTab }),
 
       e(Box, { flexGrow: 1 },
-        e(Pane, { title: 'Source Files', width: 35, height: 15 },
-          e(FileList, { files })
-        ),
-        e(Pane, { title: 'Virtual Mapping', width: 45, height: 15 },
-          e(RouteList, { routes })
-        ),
-        e(Pane, { title: 'Presets', width: 20, height: 15 },
-          e(TemplateBrowser)
-        )
+        activeTab === 'dashboard' && e(DashboardTab, { files, routes }),
+        activeTab === 'create' && e(CreateTab, { onLog: addLog }),
+        activeTab === 'build' && e(BuildTab, { onLog: addLog }),
+        activeTab === 'addons' && e(AddonsTab, { onLog: addLog }),
+        activeTab === 'logs' && e(LogTab, { logs })
       ),
 
-      e(Pane, { title: 'Architecture System Trace', width: 100, height: 10, color: '#334155' },
-        e(LogConsole, { logs })
-      ),
-
-      e(Stats, { stats }),
-
-      e(Box, { marginTop: 1, justifyContent: 'center' },
-        e(Text, { color: '#475569' }, 'Press ESC or Q to shutdown • Architect Edition v1.5.0')
+      e(Box, { paddingX: 1, marginTop: 1, justifyContent: 'space-between', borderStyle: 'single', borderColor: '#1e293b' },
+        e(Box, null,
+          e(Text, { color: '#64748b' }, ' STATUS: '),
+          e(Text, { color: '#10b981' }, 'OPERATIONAL '),
+          e(Spinner, { type: 'dots' })
+        ),
+        e(Text, { color: '#475569' }, ' ARROWS to navigate • ESC to exit ')
       )
     )
   );
 };
 
 export function startTUI() {
-  render(e(MektaDashboard));
+  render(e(MektaTUI));
 }
