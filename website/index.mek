@@ -1,83 +1,109 @@
 <style>
-  body { background: #050508; color: #f8fafc; font-family: -apple-system, system-ui, sans-serif; margin: 0; }
-  .neon-text { text-shadow: 0 0 20px rgba(139, 92, 246, 0.4); }
-  .gradient-border { border: 1px solid rgba(139, 92, 246, 0.2); transition: 0.3s; }
-  .gradient-border:hover { border-color: #8b5cf6; }
-  .btn { background: #8b5cf6; color: white; padding: 12px 24px; border-radius: 8px; font-weight: bold; text-decoration: none; display: inline-block; }
-  .code-block { background: #0f172a; padding: 20px; border-radius: 12px; font-family: monospace; color: #94a3b8; }
+  :root { --p: #8b5cf6; --s: #0f172a; --t: #f8fafc; --bg: #020617; }
+  body { background: var(--bg); color: var(--t); font-family: 'Inter', system-ui, sans-serif; margin: 0; overflow-x: hidden; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+  @keyframes pulseGlow { 0% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.2); } 50% { box-shadow: 0 0 50px rgba(139, 92, 246, 0.4); } 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.2); } }
+
+  .fade-in { animation: fadeIn 0.8s ease-out forwards; }
+  .float { animation: float 3s ease-in-out infinite; }
+  .glow { animation: pulseGlow 4s ease-in-out infinite; }
+
+  .glass { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(12px); border: 1px solid rgba(148, 163, 184, 0.1); }
+  .card { padding: 40px; border-radius: 24px; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+  .card:hover { transform: scale(1.02); border-color: var(--p); background: rgba(139, 92, 246, 0.05); }
+
+  .hero-grad { position: absolute; top: -20%; left: 50%; transform: translateX(-50%); width: 120%; height: 60%; background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(2, 6, 23, 0) 70%); z-index: -1; }
+  .btn-primary { background: var(--p); color: white; padding: 16px 32px; border-radius: 12px; font-weight: 700; text-decoration: none; display: inline-block; transition: 0.3s; box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(139, 92, 246, 0.5); }
 </style>
 
 <page>
-  <header style="padding: 20px 50px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b;">
-    <text style="font-size: 24px; font-weight: 900; color: #8b5cf6; letter-spacing: 2px;">MEKTA OS</text>
-    <nav style="display: flex; gap: 30px;">
-      <a href="/docs/getting-started.html" style="color: #94a3b8; text-decoration: none;">Getting Started</a>
-      <a href="/docs/routing.html" style="color: #94a3b8; text-decoration: none;">Architecture</a>
-      <a href="https://github.com" style="color: #8b5cf6; font-weight: bold; text-decoration: none;">Get Source</a>
+  <div class="hero-grad"></div>
+
+  <header style="padding: 24px 8%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100;" class="glass">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <img src="mekta-logo.svg" width="32" height="32" />
+      <text style="font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: #fff;">MEKTA <span style="color: #8b5cf6;">OS</span></text>
+    </div>
+    <nav style="display: flex; gap: 32px; font-size: 14px; font-weight: 600;">
+      <a href="/docs/getting-started.html" style="color: #94a3b8; text-decoration: none;">Compiler</a>
+      <a href="/docs/routing.html" style="color: #94a3b8; text-decoration: none;">Router</a>
+      <a href="/docs/addons.html" style="color: #94a3b8; text-decoration: none;">Addons</a>
+      <a href="https://github.com" style="color: #fff; text-decoration: none; border: 1px solid #334155; padding: 8px 16px; border-radius: 8px;">Source</a>
     </nav>
   </header>
 
   <main>
-    <section style="padding: 100px 50px; text-align: center;">
-      <text style="font-size: 80px; font-weight: 900; line-height: 1; margin-bottom: 20px;" class="neon-text">RE-ARCHITECTED</text>
-      <text style="font-size: 24px; color: #64748b; max-width: 800px; margin: 0 auto 40px auto;">
-        Mekta v1.6: The high-fidelity Agentic UI framework for terminal and web ecosystems.
-        Compile .mek to React, HTML, or PHP.
+    <section style="padding: 120px 8% 80px 8%; text-align: center;">
+      <text style="color: #8b5cf6; font-weight: 800; font-size: 14px; letter-spacing: 4px; display: block; margin-bottom: 24px;" class="fade-in">▣ v1.6.0 ARCHITECT CORE</text>
+      <text style="font-size: 84px; font-weight: 900; letter-spacing: -3px; line-height: 0.95; margin-bottom: 32px; display: block;" class="fade-in">Build Without<br/><span style="color: #8b5cf6;">Limitations.</span></text>
+      <text style="font-size: 22px; color: #94a3b8; max-width: 700px; margin: 0 auto 48px auto; line-height: 1.6;" class="fade-in">
+        The high-fidelity virtual framework for terminal, web, and game ecosystems.
+        Mekta combines the power of Next.js with the portability of a custom DSL.
       </text>
-      <container>
-        <a href="/docs/getting-started.html" class="btn">Explore Architect Dashboard</a>
-      </container>
+      <div class="fade-in" style="display: flex; justify-content: center; gap: 20px;">
+        <a href="/docs/getting-started.html" class="btn-primary">Initialize Architect Dashboard</a>
+        <a href="https://github.com" style="color: #fff; text-decoration: none; padding: 16px 32px; font-weight: 700;">Explore Documentation →</a>
+      </div>
     </section>
 
-    <section style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; padding: 50px;">
-      <container class="gradient-border" style="padding: 40px; border-radius: 20px; background: #0a0a0f;">
-        <text style="color: #8b5cf6; font-weight: bold; margin-bottom: 10px; display: block;">01 // COMPILER</text>
-        <text style="font-size: 24px; font-weight: bold; margin-bottom: 15px; display: block;">Multi-Target Bridge</text>
-        <text style="color: #64748b; line-height: 1.6;">
-          Deploy your UI as React components, Static HTML, or PHP templates without changing a single line of code.
-        </text>
-      </container>
-
-      <container class="gradient-border" style="padding: 40px; border-radius: 20px; background: #0a0a0f;">
-        <text style="color: #8b5cf6; font-weight: bold; margin-bottom: 10px; display: block;">02 // INTERFACE</text>
-        <text style="font-size: 24px; font-weight: bold; margin-bottom: 15px; display: block;">Architect Dashboard</text>
-        <text style="color: #64748b; line-height: 1.6;">
-          A professional high-fidelity terminal console with real-time log monitoring and virtual routing.
-        </text>
-      </container>
-
-      <container class="gradient-border" style="padding: 40px; border-radius: 20px; background: #0a0a0f;">
-        <text style="color: #8b5cf6; font-weight: bold; margin-bottom: 10px; display: block;">03 // RUNTIME</text>
-        <text style="font-size: 24px; font-weight: bold; margin-bottom: 15px; display: block;">Next.js Plus Routing</text>
-        <text style="color: #64748b; line-height: 1.6;">
-          Native support for nested layouts, loading states, and dynamic parameters built into the core router.
-        </text>
-      </container>
+    <section style="padding: 40px 8%;">
+      <div class="glass glow" style="padding: 2px; border-radius: 20px; max-width: 900px; margin: 0 auto; overflow: hidden;">
+        <div style="background: #020617; border-radius: 18px; padding: 32px;">
+          <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+            <div style="width: 12px; height: 12px; border-radius: 50%; background: #ef4444;"></div>
+            <div style="width: 12px; height: 12px; border-radius: 50%; background: #f59e0b;"></div>
+            <div style="width: 12px; height: 12px; border-radius: 50%; background: #10b981;"></div>
+            <text style="color: #475569; font-size: 12px; font-weight: 700; margin-left: 12px;">pages/index.mek</text>
+          </div>
+          <code style="font-family: 'JetBrains Mono', monospace; font-size: 16px; line-height: 1.8;">
+            <span style="color: #8b5cf6;">&lt;layout&gt;</span><br/>
+            &nbsp;&nbsp;<span style="color: #94a3b8;">&lt;hero title=</span><span style="color: #10b981;">"Mekta Architect"</span><span style="color: #94a3b8;"> /&gt;</span><br/>
+            &nbsp;&nbsp;<span style="color: #94a3b8;">&lt;main&gt;</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #3b82f6;">&lt;m-for item=</span><span style="color: #10b981;">"i in list"</span><span style="color: #3b82f6;">&gt;</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #94a3b8;">&lt;card&gt;{i.name}&lt;/card&gt;</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #3b82f6;">&lt;/m-for&gt;</span><br/>
+            &nbsp;&nbsp;<span style="color: #94a3b8;">&lt;/main&gt;</span><br/>
+            <span style="color: #8b5cf6;">&lt;/layout&gt;</span>
+          </code>
+        </div>
+      </div>
     </section>
 
-    <section style="padding: 80px 50px; background: #0a0a0f; border-top: 1px solid #1e293b;">
-      <text style="font-size: 32px; font-weight: bold; margin-bottom: 40px; display: block; text-align: center;">Standard .mek Component</text>
-      <container class="code-block" style="max-width: 800px; margin: 0 auto;">
-        <text color="#6366f1">{"<layout>"}</text>
-        <br/>
-        <text color="#94a3b8">{"  <header title=\"Mekta\" />"}</text>
-        <br/>
-        <text color="#94a3b8">{"  <main>"}</text>
-        <br/>
-        <text color="#10b981">{"    <m-for item=\"p in products\">"}</text>
-        <br/>
-        <text color="#94a3b8">{"      <card>{p.name}</card>"}</text>
-        <br/>
-        <text color="#10b981">{"    </m-for>"}</text>
-        <br/>
-        <text color="#94a3b8">{"  </main>"}</text>
-        <br/>
-        <text color="#6366f1">{"</layout>"}</text>
-      </container>
+    <section style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 32px; padding: 100px 8%;">
+      <div class="glass card fade-in">
+        <text style="color: #8b5cf6; font-weight: 800; font-size: 12px; margin-bottom: 16px; display: block;">01 // COMPILER</text>
+        <text style="font-size: 24px; font-weight: 800; margin-bottom: 16px; display: block; color: #fff;">Multi-Target Bridge</text>
+        <text style="color: #64748b; line-height: 1.7;">Compile your .mek source to React SSR, Static HTML, or PHP without changing a single line of code. Native performance across all environments.</text>
+      </div>
+
+      <div class="glass card fade-in" style="animation-delay: 0.2s;">
+        <text style="color: #8b5cf6; font-weight: 800; font-size: 12px; margin-bottom: 16px; display: block;">02 // INTERFACE</text>
+        <text style="font-size: 24px; font-weight: 800; margin-bottom: 16px; display: block; color: #fff;">Architect Core TUI</text>
+        <text style="color: #64748b; line-height: 1.7;">A professional high-fidelity terminal console with real-time log monitoring, file-tree mapping, and system health tracking.</text>
+      </div>
+
+      <div class="glass card fade-in" style="animation-delay: 0.4s;">
+        <text style="color: #8b5cf6; font-weight: 800; font-size: 12px; margin-bottom: 16px; display: block;">03 // ROUTING</text>
+        <text style="font-size: 24px; font-weight: 800; margin-bottom: 16px; display: block; color: #fff;">Next-Gen Routing</text>
+        <text style="color: #64748b; line-height: 1.7;">Powerful file-system based routing with support for nested layouts, loading states, and dynamic parameters. The Next.js experience in a custom DSL.</text>
+      </div>
+    </section>
+
+    <section style="padding: 100px 8%; text-align: center; background: radial-gradient(circle at center, rgba(139, 92, 246, 0.05) 0%, transparent 70%);">
+      <text style="font-size: 48px; font-weight: 900; margin-bottom: 24px; display: block;">Ready to Build?</text>
+      <text style="color: #64748b; margin-bottom: 40px; display: block; font-size: 18px;">Download the CLI and start your first high-fidelity project in seconds.</text>
+      <a href="/docs/getting-started.html" class="btn-primary glow">Launch Dashboard ▣</a>
     </section>
   </main>
 
-  <footer style="padding: 60px 50px; border-top: 1px solid #1e293b; text-align: center; color: #475569;">
-    <text>Mekta Architect Framework v1.6.0_STABLE // 24/7 Professional Infrastructure.</text>
+  <footer style="padding: 60px 8%; border-top: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center; color: #475569; font-size: 14px;">
+    <text>© 2024 Mekta Team. Built for the Architect Generation.</text>
+    <div style="display: flex; gap: 24px;">
+      <text>v1.6.0 STABLE</text>
+      <text>MIT LICENSE</text>
+    </div>
   </footer>
 </page>

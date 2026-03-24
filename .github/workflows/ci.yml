@@ -13,5 +13,10 @@ jobs:
       - run: npm install
       - name: Validate Compiler
         run: node -e "import { compile } from './core/compiler.js'; compile('<page><text>CI Check</text></page>')"
-      - name: Build Templates
-        run: node cli/index.js clone dashboard
+      - name: Build Web Page
+        run: node -e "import { compile } from './core/compiler.js'; import fs from 'fs'; const { js } = compile(fs.readFileSync('website/index.mek', 'utf8'), { target: 'html' }); fs.writeFileSync('website/index.html', js);"
+      - name: Upload Website Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: website
+          path: website/
