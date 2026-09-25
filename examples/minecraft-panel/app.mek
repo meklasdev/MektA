@@ -1,0 +1,7 @@
+<page title="Minecraft Server Panel">
+  <section class="status-bar">
+    <heading>Server Status: ONLINE</heading>
+    <text>Players: {server.onlinePlayers} / {server.maxPlayers}</text>
+  </section>
+  <button m-on:click={restartServer}>Restart Server</button>
+</page>

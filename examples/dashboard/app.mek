@@ -1,0 +1,17 @@
+<page title="Admin Dashboard" layout="dashboard">
+  <section class="hero">
+    <heading>Welcome, {user.name}</heading>
+    <button m-on:click={openSettings} m-disabled={loading}>
+      Settings
+    </button>
+  </section>
+  <if condition={user.loggedIn}>
+    <DashboardGrid />
+  </if>
+  <else>
+    <LoginForm />
+  </else>
+  <for item={project} in={projects}>
+    <ProjectCard project={project} key={project.id} />
+  </for>
+</page>

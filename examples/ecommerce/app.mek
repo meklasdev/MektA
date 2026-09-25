@@ -1,0 +1,11 @@
+<page title="Storefront">
+  <section class="catalog">
+    <for item={product} in={products}>
+      <card key={product.id}>
+        <heading>{product.name}</heading>
+        <text>Price: ${product.price}</text>
+        <button m-on:click={addToCart}>Add to Cart</button>
+      </card>
+    </for>
+  </section>
+</page>
