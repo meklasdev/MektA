@@ -1,299 +1,555 @@
+import {
+  ProgramNode,
+  PageNode,
+  LayoutNode,
+  SlotNode,
+  ElementNode,
+  ComponentNode,
+  TextNode,
+  ExpressionNode,
+  AttributeNode,
+  EventDirectiveNode,
+  ConditionalNode,
+  LoopNode,
+  ImportNode,
+  ExportNode,
+  ScriptNode,
+  StyleNode,
+  FragmentNode,
+  CommentNode,
+  ASTNodeType
+} from './ast/nodes.js';
+import { MektADiagnostic, DiagnosticsBag, DiagnosticCategory, DiagnosticSeverity } from './diagnostics.js';
+
+export const TokenType = {
+  OPEN_TAG_START: 'OPEN_TAG_START', // <
+  CLOSE_TAG_START: 'CLOSE_TAG_START', // </
+  TAG_END: 'TAG_END', // >
+  SELF_CLOSE_TAG_END: 'SELF_CLOSE_TAG_END', // />
+  FRAGMENT_START: 'FRAGMENT_START', // <>
+  FRAGMENT_END: 'FRAGMENT_END', // </>
+  IDENTIFIER: 'IDENTIFIER',
+  STRING: 'STRING',
+  EQUALS: 'EQUALS',
+  EXPRESSION: 'EXPRESSION',
+  TEXT: 'TEXT',
+  COMMENT: 'COMMENT',
+  SCRIPT_BLOCK: 'SCRIPT_BLOCK',
+  STYLE_BLOCK: 'STYLE_BLOCK',
+  EOF: 'EOF'
+};
+
 /**
- * Mekta Robust Tokenizer (v1.6 Architect Edition)
- * Supports line/column tracking, fragments, comments, and expressions.
+ * Tokenize source code into stream of tokens with accurate line/column locations.
  */
-export function tokenize(input) {
+export function tokenize(input, filename = 'unknown.mek', diagnostics = new DiagnosticsBag()) {
   const tokens = [];
   let cursor = 0;
   let line = 1;
   let column = 1;
   let inTag = false;
 
+  const createLoc = (startLine, startCol, startOffset) => ({
+    start: { line: startLine, column: startCol, offset: startOffset },
+    end: { line, column, offset: cursor }
+  });
+
   while (cursor < input.length) {
-    let char = input[cursor];
+    const startOffset = cursor;
+    const startLine = line;
+    const startCol = column;
+    const char = input[cursor];
     const nextChar = input[cursor + 1];
 
-    const updatePos = (str) => {
-      for (const c of str) {
-        if (c === '\n') {
+    const advance = (n = 1) => {
+      for (let i = 0; i < n; i++) {
+        if (input[cursor] === '\n') {
           line++;
           column = 1;
         } else {
           column++;
         }
+        cursor++;
       }
-      cursor += str.length;
     };
 
-    // Handle Expressions { ... }
-    if (char === '{' && !inTag) {
+    // Handle HTML Comments <!-- ... -->
+    if (char === '<' && input.slice(cursor, cursor + 4) === '<!--') {
+      advance(4);
       let value = '';
-      let braceCount = 1;
-      cursor++;
-      column++;
-      while (cursor < input.length && braceCount > 0) {
-        if (input[cursor] === '{') braceCount++;
-        if (input[cursor] === '}') braceCount--;
-        if (braceCount > 0) {
-          value += input[cursor];
-          updatePos(input[cursor]);
-        }
+      while (cursor < input.length && input.slice(cursor, cursor + 3) !== '-->') {
+        value += input[cursor];
+        advance(1);
       }
-      cursor++;
-      column++;
-      tokens.push({ type: 'EXPRESSION', value: value.trim(), line, column });
+      if (input.slice(cursor, cursor + 3) === '-->') {
+        advance(3);
+      } else {
+        diagnostics.add(new MektADiagnostic({
+          file: filename,
+          line: startLine,
+          column: startCol,
+          message: 'Unterminated comment',
+          hint: 'Add "-->" to close the comment.',
+          category: DiagnosticCategory.SYNTAX
+        }));
+      }
+      tokens.push({
+        type: TokenType.COMMENT,
+        value: value.trim(),
+        loc: createLoc(startLine, startCol, startOffset)
+      });
       continue;
     }
 
-    // Handle Comments <!-- -->
-    if (char === '<' && input.slice(cursor, cursor + 4) === '<!--') {
-      let value = '';
-      cursor += 4;
-      while (cursor < input.length && input.slice(cursor, cursor + 3) !== '-->') {
-        value += input[cursor];
-        updatePos(input[cursor]);
+    // Handle <script ...> ... </script>
+    if (!inTag && char === '<' && /^<script[\s>]/.test(input.slice(cursor))) {
+      const match = input.slice(cursor).match(/^<script([^>]*)>([\s\S]*?)<\/script>/i);
+      if (match) {
+        const rawAttrs = match[1];
+        const content = match[2];
+        const fullLength = match[0].length;
+
+        let lang = 'ts';
+        if (/lang=["']js["']/i.test(rawAttrs)) lang = 'js';
+        let boundary = 'client';
+        if (/\bserver\b/i.test(rawAttrs)) boundary = 'server';
+
+        advance(fullLength);
+        tokens.push({
+          type: TokenType.SCRIPT_BLOCK,
+          content,
+          lang,
+          boundary,
+          loc: createLoc(startLine, startCol, startOffset)
+        });
+        continue;
       }
-      cursor += 3;
-      tokens.push({ type: 'COMMENT', value: value.trim(), line, column });
-      continue;
+    }
+
+    // Handle <style ...> ... </style>
+    if (!inTag && char === '<' && /^<style[\s>]/.test(input.slice(cursor))) {
+      const match = input.slice(cursor).match(/^<style([^>]*)>([\s\S]*?)<\/style>/i);
+      if (match) {
+        const rawAttrs = match[1];
+        const content = match[2];
+        const fullLength = match[0].length;
+        const scoped = !/\bglobal\b/i.test(rawAttrs);
+
+        advance(fullLength);
+        tokens.push({
+          type: TokenType.STYLE_BLOCK,
+          content,
+          scoped,
+          loc: createLoc(startLine, startCol, startOffset)
+        });
+        continue;
+      }
     }
 
     // Handle Fragment Start <>
     if (char === '<' && nextChar === '>') {
-      tokens.push({ type: 'FRAGMENT_START', line, column });
-      cursor += 2;
-      column += 2;
+      advance(2);
+      tokens.push({ type: TokenType.FRAGMENT_START, loc: createLoc(startLine, startCol, startOffset) });
       continue;
     }
 
     // Handle Fragment End </>
     if (char === '<' && nextChar === '/' && input[cursor + 2] === '>') {
-      tokens.push({ type: 'FRAGMENT_END', line, column });
-      cursor += 3;
-      column += 3;
+      advance(3);
+      tokens.push({ type: TokenType.FRAGMENT_END, loc: createLoc(startLine, startCol, startOffset) });
       continue;
     }
 
-    // Handle Self-Closing />
+    // Handle Self-closing Tag End />
     if (char === '/' && nextChar === '>' && inTag) {
-      tokens.push({ type: 'SELF_CLOSE_TAG_END', line, column });
-      cursor += 2;
-      column += 2;
+      advance(2);
       inTag = false;
+      tokens.push({ type: TokenType.SELF_CLOSE_TAG_END, loc: createLoc(startLine, startCol, startOffset) });
       continue;
     }
 
+    // Handle Close Tag Start </
+    if (char === '<' && nextChar === '/') {
+      advance(2);
+      inTag = true;
+      tokens.push({ type: TokenType.CLOSE_TAG_START, loc: createLoc(startLine, startCol, startOffset) });
+      continue;
+    }
+
+    // Handle Open Tag Start <
     if (char === '<') {
-      if (nextChar === '/') {
-        tokens.push({ type: 'CLOSE_TAG_START', value: '</', line, column });
-        cursor += 2;
-        column += 2;
-        inTag = true;
-      } else {
-        tokens.push({ type: 'OPEN_TAG_START', value: '<', line, column });
-        cursor += 1;
-        column += 1;
-        inTag = true;
-      }
+      advance(1);
+      inTag = true;
+      tokens.push({ type: TokenType.OPEN_TAG_START, loc: createLoc(startLine, startCol, startOffset) });
       continue;
     }
 
+    // Handle Tag End >
     if (char === '>' && inTag) {
-      tokens.push({ type: 'TAG_END', value: '>', line, column });
-      cursor += 1;
-      column += 1;
+      advance(1);
       inTag = false;
+      tokens.push({ type: TokenType.TAG_END, loc: createLoc(startLine, startCol, startOffset) });
       continue;
     }
 
+    // Handle Equals =
     if (char === '=' && inTag) {
-      tokens.push({ type: 'EQUALS', value: '=', line, column });
-      cursor += 1;
-      column += 1;
+      advance(1);
+      tokens.push({ type: TokenType.EQUALS, loc: createLoc(startLine, startCol, startOffset) });
       continue;
     }
 
-    if (/\s/.test(char)) {
-      updatePos(char);
+    // Handle Whitespace in tag
+    if (/\s/.test(char) && inTag) {
+      advance(1);
       continue;
     }
 
-    if ((char === '"' || char === "'") && inTag) {
-      const quote = char;
+    // Handle Strings "..." or '...' or “...” / ”...” (smart quotes)
+    if ((char === '"' || char === "'" || char === '“' || char === '”') && inTag) {
+      const quote = (char === '“' || char === '”') ? 'smart' : char;
+      advance(1);
       let value = '';
-      cursor += 1;
-      while (cursor < input.length && input[cursor] !== quote) {
-        value += input[cursor];
-        updatePos(input[cursor]);
+      while (cursor < input.length) {
+        const c = input[cursor];
+        if (quote === 'smart' && (c === '”' || c === '“')) break;
+        if (quote !== 'smart' && c === quote) break;
+        value += c;
+        advance(1);
       }
-      cursor += 1;
-      tokens.push({ type: 'STRING', value, line, column });
+      if (cursor < input.length) advance(1);
+      tokens.push({
+        type: TokenType.STRING,
+        value,
+        loc: createLoc(startLine, startCol, startOffset)
+      });
       continue;
     }
 
-    // Expressions inside tags {prop={val}}
-    if (char === '{' && inTag) {
-        let value = '';
-        let braceCount = 1;
-        cursor++;
-        column++;
-        while (cursor < input.length && braceCount > 0) {
-          if (input[cursor] === '{') braceCount++;
-          if (input[cursor] === '}') braceCount--;
-          if (braceCount > 0) {
-            value += input[cursor];
-            updatePos(input[cursor]);
-          }
+    // Handle Expressions { ... } (inside or outside tags)
+    if (char === '{') {
+      advance(1);
+      let value = '';
+      let braceCount = 1;
+      while (cursor < input.length && braceCount > 0) {
+        if (input[cursor] === '{') braceCount++;
+        else if (input[cursor] === '}') braceCount--;
+        if (braceCount > 0) {
+          value += input[cursor];
+          advance(1);
         }
-        cursor++;
-        column++;
-        tokens.push({ type: 'EXPRESSION', value: value.trim(), line, column });
-        continue;
+      }
+      if (cursor < input.length && input[cursor] === '}') {
+        advance(1);
+      } else {
+        diagnostics.add(new MektADiagnostic({
+          file: filename,
+          line: startLine,
+          column: startCol,
+          message: 'Unclosed expression block',
+          hint: 'Add "}" to close expression.',
+          category: DiagnosticCategory.SYNTAX
+        }));
+      }
+      tokens.push({
+        type: TokenType.EXPRESSION,
+        value: value.trim(),
+        loc: createLoc(startLine, startCol, startOffset)
+      });
+      continue;
     }
 
+    // Handle Identifiers inside tags
     if (inTag) {
       let identifier = '';
-      while (cursor < input.length && /[a-zA-Z0-9-:]/.test(input[cursor])) {
+      while (cursor < input.length && /[a-zA-Z0-9-:@._]/.test(input[cursor])) {
         identifier += input[cursor];
-        cursor += 1;
-        column++;
+        advance(1);
       }
       if (identifier) {
-        tokens.push({ type: 'IDENTIFIER', value: identifier, line, column });
+        tokens.push({
+          type: TokenType.IDENTIFIER,
+          value: identifier,
+          loc: createLoc(startLine, startCol, startOffset)
+        });
         continue;
       }
-    } else {
+    }
+
+    // Handle Text outside tags
+    if (!inTag) {
       let text = '';
       while (cursor < input.length && input[cursor] !== '<' && input[cursor] !== '{') {
         text += input[cursor];
-        updatePos(input[cursor]);
+        advance(1);
       }
-      if (text.trim()) {
-        tokens.push({ type: 'TEXT', value: text.trim(), line, column });
+      if (text) {
+        tokens.push({
+          type: TokenType.TEXT,
+          value: text,
+          loc: createLoc(startLine, startCol, startOffset)
+        });
       }
       continue;
     }
 
-    cursor++;
-    column++;
+    advance(1);
   }
 
+  tokens.push({ type: TokenType.EOF, loc: createLoc(line, column, cursor) });
   return tokens;
 }
 
 /**
- * Mekta Robust Recursive Descent Parser (v1.6 Architect Edition)
+ * Parses tokens into AST ProgramNode.
  */
-export function parse(tokens) {
+export function parse(tokens, filename = 'unknown.mek', diagnostics = new DiagnosticsBag()) {
   let current = 0;
 
-  function walk() {
-    let token = tokens[current];
+  function peek() {
+    return tokens[current] || { type: TokenType.EOF };
+  }
 
-    if (!token) return null;
+  function advance() {
+    const token = tokens[current];
+    current++;
+    return token;
+  }
 
-    if (token.type === 'COMMENT') {
-      current++;
-      return { type: 'CommentNode', value: token.value };
-    }
+  function parseAttributes() {
+    const attrs = [];
+    while (
+      current < tokens.length &&
+      peek().type !== TokenType.TAG_END &&
+      peek().type !== TokenType.SELF_CLOSE_TAG_END &&
+      peek().type !== TokenType.EOF
+    ) {
+      const tok = peek();
+      if (tok.type === TokenType.IDENTIFIER) {
+        const attrTok = advance();
+        const attrName = attrTok.value;
+        let attrValue = true;
+        let isExpression = false;
 
-    if (token.type === 'TEXT') {
-      current++;
-      return { type: 'TextNode', value: token.value };
-    }
-
-    if (token.type === 'EXPRESSION') {
-      current++;
-      return { type: 'ExpressionNode', value: token.value };
-    }
-
-    if (token.type === 'FRAGMENT_START') {
-      current++;
-      const node = { type: 'Fragment', children: [] };
-      while (current < tokens.length && tokens[current].type !== 'FRAGMENT_END') {
-        const child = walk();
-        if (child) node.children.push(child);
-      }
-      current++; // Skip </>
-      return node;
-    }
-
-    if (token.type === 'OPEN_TAG_START') {
-      token = tokens[++current]; // tag name
-      if (!token) throw new Error(`Expected tag name at line ${tokens[current-1].line}`);
-
-      const node = {
-        type: 'Element',
-        tag: token.value,
-        props: {},
-        children: [],
-      };
-      current++;
-
-      // Parse Attributes
-      while (current < tokens.length &&
-             tokens[current].type !== 'TAG_END' &&
-             tokens[current].type !== 'SELF_CLOSE_TAG_END') {
-        token = tokens[current];
-        if (token.type === 'IDENTIFIER') {
-          const name = token.value;
-          current++;
-          if (tokens[current] && tokens[current].type === 'EQUALS') {
-            current++;
-            const valToken = tokens[current];
-            if (valToken.type === 'STRING' || valToken.type === 'EXPRESSION') {
-              node.props[name] = {
-                type: valToken.type === 'STRING' ? 'Literal' : 'Expression',
-                value: valToken.value
-              };
-              current++;
-            } else {
-              node.props[name] = { type: 'Literal', value: true };
-            }
-          } else {
-            node.props[name] = { type: 'Literal', value: true };
+        if (peek().type === TokenType.EQUALS) {
+          advance(); // skip =
+          const valTok = peek();
+          if (valTok.type === TokenType.STRING) {
+            attrValue = advance().value;
+          } else if (valTok.type === TokenType.EXPRESSION) {
+            attrValue = advance().value;
+            isExpression = true;
+          } else if (valTok.type === TokenType.IDENTIFIER) {
+            attrValue = advance().value;
           }
+        }
+
+        if (attrName.startsWith('m-on:')) {
+          const eventName = attrName.replace('m-on:', '');
+          attrs.push(new EventDirectiveNode(eventName, attrValue, attrTok.loc));
         } else {
-          current++;
+          attrs.push(new AttributeNode(attrName, attrValue, isExpression, attrTok.loc));
+        }
+      } else {
+        advance();
+      }
+    }
+    return attrs;
+  }
+
+  function parseElementOrDirective() {
+    const openTok = advance(); // OPEN_TAG_START
+    const tagTok = peek();
+
+    if (tagTok.type !== TokenType.IDENTIFIER) {
+      diagnostics.add(new MektADiagnostic({
+        file: filename,
+        line: openTok.loc.start.line,
+        column: openTok.loc.start.column,
+        message: 'Expected tag name after "<"',
+        category: DiagnosticCategory.SYNTAX
+      }));
+      return null;
+    }
+
+    const tag = advance().value;
+    const attributes = parseAttributes();
+
+    let isSelfClosing = false;
+    if (peek().type === TokenType.SELF_CLOSE_TAG_END) {
+      advance();
+      isSelfClosing = true;
+    } else if (peek().type === TokenType.TAG_END) {
+      advance();
+    }
+
+    // Children parsing
+    const children = [];
+    if (!isSelfClosing) {
+      while (
+        current < tokens.length &&
+        peek().type !== TokenType.CLOSE_TAG_START &&
+        peek().type !== TokenType.EOF
+      ) {
+        const child = parseNode();
+        if (child) children.push(child);
+      }
+
+      if (peek().type === TokenType.CLOSE_TAG_START) {
+        advance(); // skip </
+        const closeTagTok = peek();
+        if (closeTagTok.type === TokenType.IDENTIFIER) {
+          const closeTag = advance().value;
+          if (closeTag !== tag) {
+            diagnostics.add(new MektADiagnostic({
+              file: filename,
+              line: closeTagTok.loc.start.line,
+              column: closeTagTok.loc.start.column,
+              message: `Mismatched closing tag </${closeTag}> for open tag <${tag}>`,
+              hint: `Change </${closeTag}> to </${tag}>`,
+              category: DiagnosticCategory.SYNTAX
+            }));
+          }
+        }
+        if (peek().type === TokenType.TAG_END) advance();
+      } else {
+        diagnostics.add(new MektADiagnostic({
+          file: filename,
+          line: openTok.loc.start.line,
+          column: openTok.loc.start.column,
+          message: `Unclosed tag <${tag}>`,
+          hint: `Add </${tag}> after element.`,
+          category: DiagnosticCategory.SYNTAX
+        }));
+      }
+    }
+
+    // Categorize node type
+    const loc = openTok.loc;
+
+    if (tag === 'page') {
+      const titleAttr = attributes.find(a => a.name === 'title');
+      const layoutAttr = attributes.find(a => a.name === 'layout');
+      const title = titleAttr ? String(titleAttr.value) : '';
+      const layout = layoutAttr ? String(layoutAttr.value) : null;
+      return new PageNode(title, layout, {}, children, loc);
+    }
+
+    if (tag === 'layout') {
+      const nameAttr = attributes.find(a => a.name === 'name');
+      const name = nameAttr ? String(nameAttr.value) : 'default';
+      return new LayoutNode(name, children, loc);
+    }
+
+    if (tag === 'slot') {
+      const nameAttr = attributes.find(a => a.name === 'name');
+      const name = nameAttr ? String(nameAttr.value) : 'default';
+      return new SlotNode(name, children, loc);
+    }
+
+    if (tag === 'if') {
+      const condAttr = attributes.find(a => a.name === 'condition' || a.name === 'test');
+      const test = condAttr ? String(condAttr.value) : 'true';
+
+      // Lookahead for optional <else> or <else-if>
+      let alternate = null;
+      if (peek().type === TokenType.OPEN_TAG_START) {
+        const nextIdx = current + 1;
+        if (tokens[nextIdx] && tokens[nextIdx].type === TokenType.IDENTIFIER && tokens[nextIdx].value === 'else') {
+          alternate = parseElementOrDirective();
         }
       }
 
-      if (tokens[current] && tokens[current].type === 'SELF_CLOSE_TAG_END') {
-        current++;
-        return node;
-      }
-
-      current++; // TAG_END
-
-      // Parse Children
-      while (current < tokens.length &&
-             tokens[current].type !== 'CLOSE_TAG_START' &&
-             tokens[current].type !== 'FRAGMENT_END') {
-        const child = walk();
-        if (child) node.children.push(child);
-      }
-
-      if (tokens[current] && tokens[current].type === 'CLOSE_TAG_START') {
-        current++; // Skip </
-        current++; // Skip tag name
-        current++; // Skip >
-      }
-
-      return node;
+      return new ConditionalNode(test, children, alternate, loc);
     }
 
-    if (token.type === 'CLOSE_TAG_START' || token.type === 'FRAGMENT_END') {
-        return null; // Return to parent for handling
+    if (tag === 'else') {
+      return new FragmentNode(children, loc);
     }
 
-    current++;
+    if (tag === 'for') {
+      const itemAttr = attributes.find(a => a.name === 'item');
+      const inAttr = attributes.find(a => a.name === 'in' || a.name === 'of');
+      const item = itemAttr ? String(itemAttr.value) : 'item';
+      const iterable = inAttr ? String(inAttr.value) : '[]';
+      return new LoopNode(item, iterable, children, null, loc);
+    }
+
+    // Component check: uppercase first letter or custom component
+    const isComponent = /^[A-Z]/.test(tag);
+    if (isComponent) {
+      return new ComponentNode(tag, attributes, children, {}, loc);
+    }
+
+    return new ElementNode(tag, attributes, children, isSelfClosing, loc);
+  }
+
+  function parseNode() {
+    const tok = peek();
+
+    if (tok.type === TokenType.COMMENT) {
+      advance();
+      return new CommentNode(tok.value, tok.loc);
+    }
+
+    if (tok.type === TokenType.TEXT) {
+      advance();
+      if (!tok.value.trim()) return null;
+      return new TextNode(tok.value, tok.loc);
+    }
+
+    if (tok.type === TokenType.EXPRESSION) {
+      advance();
+      return new ExpressionNode(tok.value, tok.loc);
+    }
+
+    if (tok.type === TokenType.FRAGMENT_START) {
+      const fragTok = advance();
+      const children = [];
+      while (
+        current < tokens.length &&
+        peek().type !== TokenType.FRAGMENT_END &&
+        peek().type !== TokenType.EOF
+      ) {
+        const child = parseNode();
+        if (child) children.push(child);
+      }
+      if (peek().type === TokenType.FRAGMENT_END) advance();
+      return new FragmentNode(children, fragTok.loc);
+    }
+
+    if (tok.type === TokenType.OPEN_TAG_START) {
+      return parseElementOrDirective();
+    }
+
+    advance();
     return null;
   }
 
-  const ast = { type: 'Program', body: [] };
-  while (current < tokens.length) {
-    const node = walk();
-    if (node) ast.body.push(node);
+  const imports = [];
+  const exports = [];
+  const scripts = [];
+  const styles = [];
+  const body = [];
+
+  while (current < tokens.length && peek().type !== TokenType.EOF) {
+    const tok = peek();
+
+    if (tok.type === TokenType.SCRIPT_BLOCK) {
+      advance();
+      scripts.push(new ScriptNode(tok.content, tok.lang, tok.boundary, tok.loc));
+      continue;
+    }
+
+    if (tok.type === TokenType.STYLE_BLOCK) {
+      advance();
+      styles.push(new StyleNode(tok.content, tok.scoped, tok.loc));
+      continue;
+    }
+
+    const node = parseNode();
+    if (node) body.push(node);
   }
-  return ast;
+
+  return new ProgramNode(body, imports, exports, scripts, styles);
 }

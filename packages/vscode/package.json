@@ -1,0 +1,38 @@
+{
+  "name": "mekta-vscode",
+  "displayName": "MektA Language Tools",
+  "description": "VS Code Extension and Language Server for .mek DSL",
+  "version": "1.6.0",
+  "publisher": "mekta",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Formatters"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "mek",
+        "aliases": [
+          "MektA",
+          "mek"
+        ],
+        "extensions": [
+          ".mek"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "mek",
+        "scopeName": "source.mek",
+        "path": "./syntaxes/mek.tmLanguage.json"
+      }
+    ]
+  }
+}
