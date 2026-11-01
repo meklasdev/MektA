@@ -8,6 +8,7 @@ const http = require("http");
 let nextServer;
 const statePath = () => path.join(app.getPath("userData"), "mekta-state.json");
 const workspacePath = () => path.join(app.getPath("userData"), "mekta-workspace.json");
+const orchestrationPath = () => path.join(app.getPath("userData"), "mekta-orchestration.json");
 function startNext() {
   const root = app.isPackaged ? path.join(process.resourcesPath, "app") : path.join(__dirname, "..");
   const nextBin = path.join(root, "node_modules", "next", "dist", "bin", "next");
@@ -46,6 +47,8 @@ ipcMain.handle("mekta:load-state", async () => { try { return JSON.parse(fs.read
 ipcMain.handle("mekta:save-state", async (_event, state) => { fs.mkdirSync(path.dirname(statePath()), { recursive: true }); fs.writeFileSync(statePath(), JSON.stringify(state, null, 2), "utf8"); return { ok: true }; });
 ipcMain.handle("mekta:load-workspace", async () => { try { return JSON.parse(fs.readFileSync(workspacePath(), "utf8")); } catch { return null; } });
 ipcMain.handle("mekta:save-workspace", async (_event, workspace) => { fs.mkdirSync(path.dirname(workspacePath()), { recursive: true }); fs.writeFileSync(workspacePath(), JSON.stringify(workspace, null, 2), "utf8"); return { ok: true }; });
+ipcMain.handle("mekta:load-orchestration", async () => { try { return JSON.parse(fs.readFileSync(orchestrationPath(), "utf8")); } catch { return null; } });
+ipcMain.handle("mekta:save-orchestration", async (_event, state) => { fs.mkdirSync(path.dirname(orchestrationPath()), { recursive: true }); fs.writeFileSync(orchestrationPath(), JSON.stringify(state, null, 2), "utf8"); return { ok: true }; });
 ipcMain.handle("mekta:runtime-status", async () => await new Promise((resolve) => { const child = spawn("opencode", ["--version"], { shell: true, windowsHide: true }); let output = ""; child.stdout?.on("data", (chunk) => { output += chunk.toString(); }); child.on("close", (code) => resolve({ installed: code === 0, version: output.trim() })); child.on("error", () => resolve({ installed: false, version: "" })); }));
 ipcMain.handle("mekta:check-updates", async () => { if (!app.isPackaged) return { available: false, reason: "development" }; try { const result = await autoUpdater.checkForUpdates(); return { available: Boolean(result?.updateInfo), version: result?.updateInfo?.version ?? null }; } catch (error) { return { available: false, reason: String(error) }; } });
 ipcMain.handle("mekta:install-update", async () => { if (!app.isPackaged) return { ok: false }; await autoUpdater.downloadUpdate(); autoUpdater.quitAndInstall(); return { ok: true }; });
