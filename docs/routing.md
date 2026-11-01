@@ -1,30 +1,20 @@
-# Mekta Routing System
+# Application routing
 
-Mekta implements a file-system based routing system inspired by Next.js.
+MektA Studio is a single desktop workspace built with Next.js App Router.
 
-## Structure
+## Routes
 
-Your pages should be placed in the `pages/` directory at the root of your project.
+- / — desktop workspace and onboarding
+- /privacy — privacy policy
+- /terms — terms of use
 
-- `pages/index.mek` -> `/`
-- `pages/about.mek` -> `/about`
-- `pages/docs/index.mek` -> `/docs`
-- `pages/posts/[id].mek` -> `/posts/1`, `/posts/abc`, etc.
+Electron loads the static export from resources/app/out/index.html. Browser mode and desktop mode share the same React UI.
 
-## Dynamic Routes
+## Data routing
 
-File names with square brackets like `[id].mek` denote dynamic routes. The value captured by the route is injected into your `.mek` component as a variable.
+The UI selects one data source at startup:
 
-**Example: `pages/posts/[id].mek`**
-```mek
-<page>
-  <text>Post ID: {id}</text>
-</page>
-```
+- local source when Supabase variables are absent,
+- Supabase source when both public variables are present.
 
-## Route Resolution
-
-The Mekta server automatically resolves these paths:
-1. Exact match (`/about` -> `pages/about.mek`)
-2. Directory index (`/docs` -> `pages/docs/index.mek`)
-3. Dynamic match (`/posts/123` -> `pages/posts/[id].mek` with `{id: '123'}`)
+Both sources expose the same project and profile operations, so feature code does not know where data is stored.

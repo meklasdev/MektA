@@ -1,6 +1,6 @@
 {
   "name": "mekta",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "author": "MektA Team",
   "description": "MektA Studio desktop workspace for building and managing digital projects.",
   "type": "module",
@@ -12,11 +12,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "typecheck": "tsc --noEmit --pretty false",
+    "test:compiler": "node -e \"import { compile } from './core/compiler.js'; const result = compile('<page><text>CI Check</text></page>'); if (!result.js) process.exit(1);\"",
     "desktop:dev": "concurrently \"next dev -p 3000\" \"wait-on http://localhost:3000 && electron electron/main.cjs\"",
     "desktop:build": "npm run icon && next build && electron-builder --win",
     "icon": "node scripts/make-icon.mjs",
     "desktop:pack": "electron-builder --dir",
-    "lint": "next lint",
     "legacy:dev": "node ./cli/index.js dev",
     "legacy:build": "node ./cli/index.js build"
   },
@@ -69,7 +70,7 @@
   "build": {
     "appId": "dev.meklas.mekta-studio",
     "productName": "MektA Studio",
-    "directories": { "output": "release-studio-production-v6" },
+    "directories": { "output": "release" },
     "asar": false,
     "files": ["app/**/*", "components/**/*", "lib/**/*", ".next/**/*", "out/**/*", "public/**/*", "next.config.ts", "package.json", "electron/**/*", "node_modules/**/*"],
     "asarUnpack": ["out/**/*", "node_modules/next/**/*", ".next/**/*"],

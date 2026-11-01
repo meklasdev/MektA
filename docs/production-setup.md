@@ -28,7 +28,7 @@ npm run desktop:dev
 npm run desktop:build
 ~~~
 
-The installer is written to the configured 'release-studio-production-v5' directory. Electron loads the static export from 'resources/app/out/index.html'.
+The installer is written to the configured `release/` directory. Electron loads the static export from `resources/app/out/index.html`.
 
 ## 4. Vercel
 

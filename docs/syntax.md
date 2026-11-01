@@ -1,42 +1,12 @@
-# Mekta Syntax Guide (.mek)
+# MektA project format
 
-The `.mek` file format is a custom DSL designed for **Agentic UI**. It uses a JSX-like XML syntax that is easily parsable and readable for both AI agents and humans.
+The current desktop product manages project records and local workspace state. The historical .mek compiler remains in the repository for compatibility, but it is not required to use MektA Studio.
 
-## Basic Structure
+## Legacy commands
 
-A typical `.mek` file consists of a top-level `<page>` element:
+~~~bash
+node cli/index.js dev
+node cli/index.js build path/to/file.mek
+~~~
 
-```xml
-<page>
-  <text>Hello World</text>
-  <button color="purple">Click me</button>
-</page>
-```
-
-## Supported Elements
-
-- `<page>`: The root container (maps to `<div>`).
-- `<text>`: Paragraph or span element (maps to `<p>`).
-- `<button>`: Interactive button element.
-- `<container>`: Generic flexbox container.
-- `<header>`, `<footer>`, `<main>`, `<hero>`, `<features>`: Specialized layout tags.
-
-## Attributes and Props
-
-All elements support standard HTML attributes and custom props:
-
-```xml
-<button color="magenta" id="submit-btn" class="active">
-  Submit
-</button>
-```
-
-*Note: The Mekta compiler automatically transforms the `class` attribute to `className` for React compatibility.*
-
-## Expressions (Planned)
-
-Mekta currently supports static text and structure. Dynamic expressions like `{props.name}` are coming in version 1.3.
-
----
-
-[Back to Home](../README.md)
+New product features should be implemented as typed React modules in the desktop workspace, not as large monolithic generated files.

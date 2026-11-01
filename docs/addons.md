@@ -1,28 +1,14 @@
-# Mekta Addon System
+# Addons and plugins
 
-Mekta provides a built-in command to install and manage specialized "Architect Addons."
+MektA separates the desktop shell from integrations. A plugin needs a real provider, a permission boundary and a persisted installation record.
 
-## Usage
+The plugin installation model stores a key, version, JSON configuration, owner id and timestamps. Supabase protects these rows with owner-only RLS. Local mode keeps the installed-plugin list in the local workspace file.
 
-```bash
-mekta addons --list
-mekta addons gsap
-mekta addons fivem
-```
+## Adding a plugin
 
-## Available Addons
+1. Define its capability and required permissions.
+2. Add a versioned installation entry through the integration layer.
+3. Never mark a plugin connected until its provider returns a successful health check.
+4. Show an explicit empty or unavailable state when the registry is not configured.
 
-### GSAP (GreenSock)
-Installs GSAP for high-performance animations and creates a demo file (`gsap-demo.mek`) to show you how to use it in your Mekta components.
-
-### FiveM
-Architects your project for use as a FiveM UI resource. It generates:
-- `fxmanifest.lua` with the correct UI configuration.
-- A basic `html/` directory for your built files.
-
-## Custom Addons
-
-Addons are defined in `addons/addons.js`. They can:
-1. Inject dependencies into `package.json`.
-2. Generate boilerplate code or configuration files.
-3. Perform post-install actions.
+The UI never pretends that a marketplace or provider is connected.

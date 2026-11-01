@@ -1,51 +1,30 @@
-# Getting Started with Mekta
+# Getting started
 
-Mekta is designed to be the ultimate target for **Agentic UI** and professional **FiveM** modding.
+## First launch
 
-## 1. Prerequisites
+1. Run npm run desktop:dev or install the Windows installer.
+2. Enter your name and workspace name.
+3. Create the first project or skip it.
+4. Check OpenCode in Agents & MCP.
+5. Use Overview, Projects, Plugins and Settings.
 
-- Node.js 18+
-- npm 9+
+Onboarding does not create demo rows. Every record shown after setup was created by the user.
 
-## 2. Setting Up
+## Local mode
 
-Install the dependencies:
+Local mode is the default. It needs no Supabase account or API key. Desktop data is stored in %APPDATA%/mekta/mekta-workspace.json. Browser development uses localStorage.
 
-```bash
-npm install
-```
+## Cloud mode
 
-## 3. Using the Dashboard
+Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY before building. Sessions use Supabase Auth and data is protected by PostgreSQL RLS from supabase/schema.sql.
 
-Mekta's interactive dashboard is the best way to manage your project. Run it with:
+## Commands
 
-```bash
-node cli/index.js dashboard
-```
+~~~bash
+npm run dev
+npm run build
+npm run desktop:dev
+npm run desktop:build
+~~~
 
-Within the dashboard, you can:
-- **Switch Modes**: Agent, Architect, and Builder modes.
-- **Generate Projects**: Select a preset like `Standard Web` or `FiveM UI`.
-- **Install Addons**: Add GSAP animations or Next.js integration.
-
-## 4. Building Your First .mek File
-
-Create a file named `hello.mek`:
-
-```xml
-<page>
-  <text>Hello from Mekta!</text>
-</page>
-```
-
-Compile it to React-compatible JavaScript:
-
-```bash
-node cli/index.js build hello.mek
-```
-
-This will produce `hello.js`, which can be rendered by any React environment or Mekta's built-in SSR server.
-
----
-
-[Back to Home](../README.md)
+The legacy CLI remains available for compatibility, but the primary product is MektA Studio.
