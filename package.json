@@ -1,32 +1,80 @@
 {
   "name": "mekta",
-  "version": "1.0.0",
-  "description": "Custom frontend framework that compiles .mek into React-compatible JS.",
+  "version": "2.0.1",
+  "author": "MektA Team",
+  "description": "MektA Studio desktop workspace for building and managing digital projects.",
   "type": "module",
-  "main": "core/compiler.js",
+  "main": "electron/main.cjs",
   "bin": {
     "mekta": "./cli/index.js"
   },
   "scripts": {
-    "build": "node ./cli/index.js build",
-    "dev": "node ./cli/index.js dev",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "desktop:dev": "concurrently \"next dev -p 3000\" \"wait-on http://localhost:3000 && electron electron/main.cjs\"",
+    "desktop:build": "npm run icon && next build && electron-builder --win",
+    "icon": "node scripts/make-icon.mjs",
+    "desktop:pack": "electron-builder --dir",
+    "lint": "next lint",
+    "legacy:dev": "node ./cli/index.js dev",
+    "legacy:build": "node ./cli/index.js build"
   },
   "dependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@hookform/resolvers": "^3.9.1",
+    "@supabase/supabase-js": "^2.49.1",
+    "@supabase/ssr": "^0.5.2",
     "boxen": "^8.0.1",
     "chalk": "^5.3.0",
     "chokidar": "^4.0.3",
+    "clsx": "^2.1.1",
     "commander": "^13.1.0",
     "express": "^4.21.2",
+    "framer-motion": "^11.15.0",
     "gradient-string": "^3.0.0",
     "ink": "^5.1.0",
     "ink-big-text": "^2.0.0",
     "ink-select-input": "^6.0.0",
     "ink-spinner": "^5.0.0",
     "ink-text-input": "^6.0.0",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.468.0",
+    "next": "^15.1.3",
     "ora": "^8.2.0",
+    "prismjs": "^1.29.0",
     "prompts": "^2.4.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.6.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.2",
+    "zustand": "^5.0.3",
+    "react-hook-form": "^7.54.2",
+    "sonner": "^1.7.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "concurrently": "^9.1.2",
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8",
+    "electron-updater": "^6.3.9",
+    "wait-on": "^8.0.2"
+    ,"sharp": "^0.33.5"
+    ,"png-to-ico": "^2.1.8"
+  },
+  "build": {
+    "appId": "dev.meklas.mekta-studio",
+    "productName": "MektA Studio",
+    "directories": { "output": "release-studio-production-v6" },
+    "asar": false,
+    "files": ["app/**/*", "components/**/*", "lib/**/*", ".next/**/*", "out/**/*", "public/**/*", "next.config.ts", "package.json", "electron/**/*", "node_modules/**/*"],
+    "asarUnpack": ["out/**/*", "node_modules/next/**/*", ".next/**/*"],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "artifactName": "MektA-Studio-Setup-${version}.${ext}", "signAndEditExecutable": false, "icon": "build/icon.ico" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true },
+    "publish": [{ "provider": "github", "owner": "meklasdev", "repo": "MektA", "releaseType": "release" }]
   }
 }
