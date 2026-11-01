@@ -1,6 +1,6 @@
 {
   "name": "mekta",
-  "version": "2.0.4",
+    "version": "2.0.5",
   "author": "MektA Team",
   "description": "MektA Studio desktop workspace for building and managing digital projects.",
   "type": "module",
@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit --pretty false",
     "test:compiler": "node -e \"import { compile } from './core/compiler.js'; const result = compile('<page><text>CI Check</text></page>'); if (!result.js) process.exit(1);\"",
     "desktop:dev": "concurrently \"next dev -p 3000\" \"wait-on http://localhost:3000 && electron electron/main.cjs\"",
-    "desktop:build": "npm run icon && next build && electron-builder --win",
+      "desktop:build": "npm run icon && next build && electron-builder --win --publish never",
     "icon": "node scripts/make-icon.mjs",
     "desktop:pack": "electron-builder --dir",
     "legacy:dev": "node ./cli/index.js dev",
