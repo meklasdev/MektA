@@ -43,6 +43,8 @@ Copy .env.example to .env.local, add the public Supabase URL and anon key, then 
 - [OpenCode and MCP](docs/opencode-mcp.md)
 - [Screenshots and product map](docs/screenshots.md)
 - [Design system](docs/studio-design-system.md)
+- [Product vision](docs/product-vision.md)
+- [Ideas backlog](docs/ideas-backlog.md)
 - [Privacy](docs/privacy.md)
 - [Terms](docs/terms.md)
 
