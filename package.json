@@ -1,6 +1,6 @@
 {
   "name": "mekta",
-    "version": "2.0.5",
+  "version": "2.0.5",
   "author": "MektA Team",
   "description": "MektA Studio desktop workspace for building and managing digital projects.",
   "type": "module",
@@ -15,19 +15,19 @@
     "typecheck": "tsc --noEmit --pretty false",
     "test:compiler": "node -e \"import { compile } from './core/compiler.js'; const result = compile('<page><text>CI Check</text></page>'); if (!result.js) process.exit(1);\"",
     "desktop:dev": "concurrently \"next dev -p 3000\" \"wait-on http://localhost:3000 && electron electron/main.cjs\"",
-      "desktop:build": "npm run icon && next build && electron-builder --win --publish never",
+    "desktop:build": "npm run icon && next build && electron-builder --win --publish never",
     "icon": "node scripts/make-icon.mjs",
     "desktop:pack": "electron-builder --dir",
     "legacy:dev": "node ./cli/index.js dev",
     "legacy:build": "node ./cli/index.js build"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.9.1",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.49.1",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
-    "@hookform/resolvers": "^3.9.1",
-    "@supabase/supabase-js": "^2.49.1",
-    "@supabase/ssr": "^0.5.2",
     "boxen": "^8.0.1",
     "chalk": "^5.3.0",
     "chokidar": "^4.0.3",
@@ -49,13 +49,14 @@
     "prompts": "^2.4.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hook-form": "^7.54.2",
+    "simple-icons": "^16.36.0",
+    "sonner": "^1.7.1",
     "tailwind-merge": "^2.6.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.2",
-    "zustand": "^5.0.3",
-    "react-hook-form": "^7.54.2",
-    "sonner": "^1.7.1",
-    "zod": "^3.24.1"
+    "zod": "^3.24.1",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
@@ -63,19 +64,60 @@
     "electron": "^34.0.0",
     "electron-builder": "^25.1.8",
     "electron-updater": "^6.3.9",
+    "png-to-ico": "^2.1.8",
+    "sharp": "^0.33.5",
     "wait-on": "^8.0.2"
-    ,"sharp": "^0.33.5"
-    ,"png-to-ico": "^2.1.8"
   },
   "build": {
     "appId": "dev.meklas.mekta-studio",
     "productName": "MektA Studio",
-    "directories": { "output": "release" },
+    "directories": {
+      "output": "release"
+    },
     "asar": false,
-    "files": ["app/**/*", "components/**/*", "lib/**/*", ".next/**/*", "out/**/*", "public/**/*", "next.config.ts", "package.json", "electron/**/*", "node_modules/**/*"],
-    "asarUnpack": ["out/**/*", "node_modules/next/**/*", ".next/**/*"],
-    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "artifactName": "MektA-Studio-Setup-${version}.${ext}", "signAndEditExecutable": false, "icon": "build/icon.ico" },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true },
-    "publish": [{ "provider": "github", "owner": "meklasdev", "repo": "MektA", "releaseType": "release" }]
+    "files": [
+      "app/**/*",
+      "components/**/*",
+      "lib/**/*",
+      ".next/**/*",
+      "out/**/*",
+      "public/**/*",
+      "next.config.ts",
+      "package.json",
+      "electron/**/*",
+      "node_modules/**/*"
+    ],
+    "asarUnpack": [
+      "out/**/*",
+      "node_modules/next/**/*",
+      ".next/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "MektA-Studio-Setup-${version}.${ext}",
+      "signAndEditExecutable": false,
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "meklasdev",
+        "repo": "MektA",
+        "releaseType": "release"
+      }
+    ]
   }
 }

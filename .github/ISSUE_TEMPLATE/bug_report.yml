@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a reproducible problem in MektA
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Remove API keys, tokens and private project data before submitting.
+  - type: input
+    id: version
+    attributes:
+      label: MektA version
+      placeholder: "2.0.5 or commit SHA"
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Windows desktop
+        - Browser development
+        - CLI
+        - GitHub Pages
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include the smallest reproducible sequence.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
